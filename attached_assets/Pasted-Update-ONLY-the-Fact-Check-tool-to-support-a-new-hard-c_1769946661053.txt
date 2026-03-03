@@ -1,0 +1,77 @@
+Update ONLY the Fact Check tool to support a new hard-coded demo case for the uploaded screenshot about “Doom 64 / Aubrey Hodges”, and force it to be MEDIUM risk so it lands in MANUAL REVIEW.
+
+IMPORTANT
+- Keep the current Fact Check UI pattern “extracting data / claims / evidence” the same as your existing hard-coded fact-check examples.
+- Fact Check already accepts FILE uploads (not text). Keep that behavior.
+- Use filename-based recognition (NO OCR). Minimal diff. No new hex colors outside tokens.css.
+
+1) ADD NEW FACT-CHECK DEMO TRIGGER (filename-based)
+When an uploaded file’s name contains ANY of:
+- "doom64"
+- "aubrey"
+- "hodges"
+- "ongaku"
+- "fact_42001"
+
+Treat it as this specific fact-check case:
+caseId: "FACT_DOOM64_42001"
+displayTitle: "Article claim review: Doom 64 / Aubrey Hodges"
+riskScore: 58  (MEDIUM)
+decision: MANUAL_REVIEW  (must be manual review)
+priorityLabel: "MEDIUM"
+matchBadge: "NEEDS REVIEW"
+
+2) HARDCODED “EXTRACTED CONTENT” (show in the Fact Check results panel)
+Populate the same structured output you already use (entities, claims, evidence, notes):
+
+Extracted Entities (demo)
+- Aubrey Hodges (game composer)
+- Doom 64 (Nintendo 64 shooter)
+- Nintendo 64
+- Midway
+- id Software
+- Nightdive Studios
+- The Ongaku (republisher / source label)
+
+Key Claims (demo)
+1. “Aubrey Hodges created a classic dark ambient score for the Nintendo 64 shooter Doom 64, revisiting it ~20 years later for an augmented album release.”
+2. “Doom 64 is not the 64th game in the Doom series.”
+3. “Doom 64 was developed by Midway with oversight from id Software.”
+4. “The game recently got a fresh port for PC and consoles by Nightdive Studios.”
+
+Evidence (demo / hard-coded cards)
+- Evidence Card A: “Publisher/credits snippet present in screenshot (The Ongaku republish line).”
+- Evidence Card B: “Known franchise info usually requires a reliable external source (developer/publisher credits).”
+- Evidence Card C: “Port claim requires verification against release notes / store listing.”
+
+Why MANUAL REVIEW (must be shown clearly)
+- “Multiple factual claims; some require external confirmation (credits, release timing, port details).”
+- “Screenshot is partial; not enough context to confirm all claims.”
+- “Marking as MEDIUM risk to route to analyst review (demo).”
+
+Verdict (demo)
+- status: "Likely credible but needs manual verification"
+- confidence: 0.62
+- recommendedAction: "Manual Review"
+
+3) MAKE SURE IT APPEARS IN MANUAL REVIEW TAB (global behavior)
+- Because riskScore is MEDIUM, ensure this item is included in:
+  - Analysis Summary: Manual Review count increments by +1
+  - Manual Review tab/list: include a row/card for this case
+- Ensure that low/high risk items DO NOT show manual review actions (already implemented rule). This one MUST show manual review.
+
+4) SHOW IMAGE PREVIEW IN RESULTS (not filename)
+- In Fact Check “Detailed Results”, display the uploaded screenshot thumbnail/preview (bigger preview per earlier change), and show the title + risk badge.
+- Keep filename text small/subtle, but prioritize the image preview.
+
+5) EXPORT REPORT INCLUDES THIS FACT CHECK DATA
+- When exporting, include a “factCheck” entry with:
+  { caseId, extractedEntities, keyClaims, evidenceCards, verdict, confidence, decision, riskScore }
+
+6) RECOMMENDED TEST FILENAME (for me to demo)
+- doom64_fact_42001.jpg
+
+CONSTRAINTS
+- Don’t touch Document / Propaganda / Verification tools.
+- No new hex colors outside tokens.css.
+- Keep layout, spacing, and typography unchanged.

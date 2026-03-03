@@ -1,0 +1,54 @@
+Beautify the UI (video-friendly) with minimal diff. Do NOT change any business logic (_fake/_real), tool behavior, or export logic—only polish styling + micro-interactions. Use ONLY existing CSS variables (var(--...)); no new hex colors outside tokens.css.
+
+GOALS
+- Make typography consistent, spacing cleaner, interactions smoother.
+- Keep current layout structure (navbar → hero → KPI cards → tabs → tool card → results).
+
+1) TYPOGRAPHY CONSISTENCY
+- Ensure a single modern sans-serif font is used across the app (prefer system stack; do not import external fonts).
+- Normalize heading/body sizes:
+  - Page title (Advanced Verification): ~48–56px, bold
+  - Subtitle: ~18–20px, muted
+  - Section headers (“Analysis Summary”, “Detailed Results”): ~18–22px, semi-bold
+  - Body text: ~14–16px
+- Ensure line-height is comfortable (1.4–1.6).
+
+2) LAYOUT + SPACING POLISH
+- Add a centered container max width (1200–1280px) for main content so it looks premium on wide screens.
+- Use consistent spacing between sections (24–32px).
+- Ensure KPI cards align perfectly and have equal height with consistent padding.
+
+3) TABS (Document / Fact Check / Propaganda / Metadata / Geolocation)
+- Improve active/hover states:
+  - Active tab: subtle background (var(--panel2)), border-bottom/underline using var(--accent), and slightly bolder text.
+  - Hover tab: gentle background highlight (var(--panel2)).
+- Keep icons and labels unchanged.
+
+4) UPLOAD DROPZONE POLISH (all tools that upload)
+- Improve dropzone styling:
+  - Default: background var(--panel), border 1px solid var(--border), radius var(--radius), shadow var(--shadow)
+  - Hover: background var(--panel2)
+  - Drag-over: border color var(--accent) + slightly stronger shadow (var(--shadow-strong) if available)
+- Add a small helper line (muted) under the dropzone text:
+  “Tip: name files with _real or _fake for demo outputs”
+  (only text change allowed inside dropzone).
+
+5) RESULTS MICRO-INTERACTIONS
+- When processing completes and results appear, animate them in:
+  - fade + slight translate (e.g., opacity 0→1 and translateY 6px→0) over ~250–350ms.
+- Add button press feedback:
+  - on click: transform scale(0.98)
+  - transition 120–180ms
+- Add subtle hover elevation for result cards and KPI cards:
+  - on hover: box-shadow slightly stronger (use existing shadow tokens only).
+
+6) TOAST POLISH
+- Animate toast in/out from bottom-right (slide + fade).
+- Ensure toast uses var(--panel) background, var(--border) border, var(--shadow), var(--radius).
+- After “Export Report” download, show a toast:
+  “Report downloaded” (and optionally filename).
+
+CONSTRAINTS
+- Minimal diff: prefer editing existing CSS/components rather than rewriting.
+- No new hex colors outside tokens.css. No external CSS frameworks. No new dependencies.
+- Keep current features and flow exactly the same.

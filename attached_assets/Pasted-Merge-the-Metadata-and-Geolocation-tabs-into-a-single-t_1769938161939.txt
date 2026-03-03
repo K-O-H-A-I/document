@@ -1,0 +1,47 @@
+Merge the “Metadata” and “Geolocation” tabs into a single tab/tool, with minimal diff and keeping the existing UI style and logic.
+
+NEW TAB
+- Replace the two tabs “Metadata” and “Geolocation” with ONE tab named: “Verification”
+  (icon can be reused from either; keep consistent styling)
+
+INSIDE THE NEW “VERIFICATION” TOOL (single upload UI)
+- Keep a single drag-and-drop upload area (same as current Metadata/Geo).
+- After upload + processing, show ONE combined result view that contains TWO sections:
+
+Section A: “Metadata Analysis”
+- Use the existing Metadata demo logic and bullets:
+  - filename contains "_fake" => suspicious metadata bullets (edited software, EXIF mismatch, timestamp anomaly)
+  - filename contains "_real" => clean metadata bullets
+  - otherwise => partial/needs review bullets
+
+Section B: “Geolocation Verification”
+- Use the existing Geolocation demo logic and bullets:
+  - "_fake" => low confidence, “No reliable match”
+  - "_real" => high confidence, “High-confidence location verification”
+  - otherwise => medium confidence, “Needs review”
+
+RESULT SUMMARY / DECISION
+- Produce one overall combined decision and risk score for the uploaded file:
+  - If either section is CRITICAL (e.g., _fake) => overall REJECT, high risk (90–95)
+  - If both are LOW (e.g., _real) => overall APPROVE, low risk (10–15)
+  - Else => MANUAL REVIEW, medium risk (50–65)
+
+KPI COUNTS
+- Ensure KPI cards and Export Report use this combined result and update counts correctly.
+
+EXPORT REPORT
+- Include both metadata + geolocation subsections in the exported JSON under the same result item:
+  {
+    ...,
+    metadata: {...},
+    geolocation: {...}
+  }
+
+CLEANUP
+- Remove unused Geolocation/Metadata components/routes/state if they become dead code.
+- Update any labels/tool list ordering so it’s: Document, Fact Check, Propaganda, Verification
+
+CONSTRAINTS
+- Minimal diff.
+- No new hex colors outside tokens.css; use var(--...) only.
+- Keep processing/toast behavior unchanged.

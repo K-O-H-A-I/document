@@ -1,0 +1,55 @@
+Update the UI to match the reference (dark “Analysis Summary” pills + Detailed Results cards) and enhance results to SHOW image previews (not just filenames). Keep minimal diff but refine layout/styles accordingly.
+
+A) ANALYSIS SUMMARY (match reference style)
+1) Replace the current large colorful KPI cards with a single “Analysis Summary” header row + 4 compact pill cards like the screenshot:
+- Layout: one row, 4 small rounded pills.
+- Each pill shows:
+  - big number (centered)
+  - small label underneath: “Total Files”, “Rejected”, “Manual Review”, “Approved”
+- Use dark panel styling:
+  - background: var(--panel) or var(--panel2) depending on theme
+  - border: 1px solid var(--border)
+  - radius: var(--radius)
+  - shadow: var(--shadow)
+- Add subtle per-pill accent tint using ONLY existing tokens (no new hex):
+  - Total: use accent/teal tone via border or left indicator using var(--accent-4) / var(--chart-teal)
+  - Rejected: use danger tone via var(--danger)
+  - Manual Review: use orange tone via existing gradient tokens or chart-orange variable
+  - Approved: use ok tone via var(--ok)
+(Do not use full gradient fill cards anymore; keep it compact and dark like reference.)
+
+B) DETAILED RESULTS (show image previews)
+2) In each result row/card, display a small thumbnail preview of the uploaded file when it’s an image:
+- For image types (jpg/jpeg/png/webp), render a preview using URL.createObjectURL(file).
+- Thumbnail placement: left side where file icon/name currently is.
+- Thumbnail size: 56–72px square, rounded corners, object-fit: cover.
+- Next to thumbnail show:
+  - Priority tag (LOW / CRITICAL / MEDIUM)
+  - Optional: show filename in small muted text (but NOT as the main focus).
+- For non-image files (PDF/DOCX), keep the file icon and filename.
+
+3) Refine the “Detailed Results” card layout to match the reference:
+- Top row: thumbnail + brief info on left; risk score % and Approve/Reject button on right.
+- Below: collapsible/stacked sections like:
+  - “Evidence Found” (if fake/critical)
+  - “Action Required”
+- Use darker panels and clearer spacing.
+
+C) STYLING (dark, modern, consistent)
+4) Ensure overall results section adopts the darker “glass” style:
+- Use var(--panel)/var(--panel2) backgrounds, var(--border), var(--shadow), var(--radius).
+- Reduce white space and make each result card more compact like screenshot.
+- Keep typography consistent; use var(--text) and var(--muted).
+
+D) IMPLEMENTATION DETAILS
+5) Store previews safely:
+- When files are selected, create previewUrl only for images and store it in the result object.
+- Revoke object URLs when results are cleared/unmounted to avoid memory leaks.
+
+E) CONSTRAINTS
+- Minimal diff; reuse existing components (KpiTiles/ResultRow) and restyle them.
+- NO new hex colors outside tokens.css; use only var(--...) variables.
+- Keep existing logic (_fake/_real) and Export Report download working.
+- Ensure Export Report includes preview metadata (filename, type, risk, decision) but NOT the blob URL itself.
+
+Deliverable: After change, user can upload 2–3 images and see thumbnails directly in the results list, and the summary row matches the compact pill style shown in the reference screenshot.

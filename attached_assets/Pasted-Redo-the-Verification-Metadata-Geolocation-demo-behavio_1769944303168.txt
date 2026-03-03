@@ -1,0 +1,59 @@
+Redo the Verification (Metadata + Geolocation) demo behavior to match the current UI shown in the screenshot.
+
+CURRENT UI (must keep)
+- The Verification tab is “Verification Suite” with the big dropzone and the helper tip text.
+- It already has two inputs at the bottom:
+  1) CLAIMED LOCATION (left)
+  2) CLAIMED EVENT (OPTIONAL) (right)
+- Keep layout + spacing the same (do not redesign).
+
+WHAT TO CHANGE
+A) Remove the old “_REAL / _FAKE” hint for Verification
+- In the tip line under the dropzone, replace:
+  “TIP: NAME FILES WITH _REAL OR _FAKE FOR DEMO OUTPUTS”
+  with something Verification-specific, e.g.:
+  “TIP: Use demo filenames like quake_turkey_32001.jpg, flood_kanchipuram_33001.jpg, eiffel_31001.jpg”
+- Verification must NOT use _real/_fake logic at all.
+
+B) Verification logic must use:
+1) Uploaded file name -> predicted location + predicted event (hard-coded demo)
+2) Compare predicted vs CLAIMED LOCATION and CLAIMED EVENT
+3) Produce MATCH / MISMATCH / INSUFFICIENT result
+
+DETERMINISTIC TRIGGERS (filename based; case-insensitive)
+1) Eiffel / Paris case (GOOD)
+- If filename contains: "eiffel" OR "paris" OR "31001"
+  predictedLocation = "Paris, France"
+  predictedEvent = "landmark photo"
+  confidence = 0.94
+  reasons = ["Landmark match: Eiffel Tower silhouette", "Urban skyline consistent with Paris"]
+
+2) Earthquake Turkey case (MISMATCH when claim is India)
+- If filename contains: "quake_turkey" OR "turkey_32001" OR "32001"
+  predictedLocation = "Kahramanmaras, Turkey"
+  predictedEvent = "earthquake"
+  confidence = 0.88
+  reasons = ["Reference match: earthquake scene (demo)", "Context cues consistent with quake aftermath (demo)"]
+
+3) Flood Kanchipuram case (MATCH when claim is Kanchipuram/Tamil Nadu/India)
+- If filename contains: "flood_kanchipuram" OR "kanchipuram" OR "tamilnadu" OR "33001"
+  predictedLocation = "Kanchipuram District, Tamil Nadu, India"
+  predictedEvent = "flood"
+  confidence = 0.90
+  reasons = ["Reference match: flood aerial inundation (demo)", "Urban inundation context consistent with district flooding (demo)"]
+
+DEFAULT (unknown)
+- Else:
+  predictedLocation = "Unknown"
+  predictedEvent = "Unknown"
+  confidence = 0.35
+  reasons = ["Insufficient cues for reliable verification (demo)"]
+
+MATCHING RULES (use the existing two inputs)
+Normalize all strings: lowercase, trim, collapse spaces, remove punctuation.
+
+Location match:
+- If predictedLocation = "Unknown": matchStatus="insufficient" risk=55 decision=MANUAL_REVIEW
+- Else if claimedLocation empty: matchStatus="insufficient" risk=50 decision=MANUAL_REVIEW
+- Else:
+ 

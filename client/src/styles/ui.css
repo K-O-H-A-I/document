@@ -1,0 +1,206 @@
+/* Card Styles */
+.card {
+  background-color: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--accent);
+}
+
+.card-muted {
+  background-color: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Typography */
+.heading-1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.heading-2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.text-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  box-shadow: var(--shadow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-strong);
+  filter: brightness(1.1);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--panel);
+  border-color: var(--accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+/* Pills & Badges */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pill-online {
+  background: rgba(39, 176, 107, 0.15);
+  color: var(--ok);
+  border: 1px solid rgba(39, 176, 107, 0.2);
+}
+
+.pill-critical {
+  background: rgba(225, 76, 76, 0.15);
+  color: var(--danger);
+}
+
+.pill-warning {
+  background: rgba(255, 154, 85, 0.15);
+  color: var(--grad-orange-start);
+}
+
+.pill-success {
+  background: rgba(39, 176, 107, 0.15);
+  color: var(--ok);
+}
+
+.pill-info {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent);
+}
+
+/* KPI Gradients */
+.bg-gradient-teal { background: linear-gradient(135deg, var(--grad-teal-start) 0%, var(--grad-teal-end) 100%); }
+.bg-gradient-orange { background: linear-gradient(135deg, var(--grad-orange-start) 0%, var(--grad-orange-end) 100%); }
+.bg-gradient-pink { background: linear-gradient(135deg, var(--grad-pink-start) 0%, var(--grad-pink-end) 100%); }
+.bg-gradient-green { background: linear-gradient(135deg, var(--grad-green-start) 0%, var(--grad-green-end) 100%); }
+
+/* Animation Utils */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom file input */
+.file-drop-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 40px;
+  text-align: center;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.01);
+  cursor: pointer;
+}
+
+.file-drop-area:hover {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+/* Compact dropzone variant */
+.file-drop-area.compact {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.file-drop-area.compact .upload-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 12px;
+}
+
+.file-drop-area.compact .upload-icon-wrapper svg {
+  width: 20px;
+  height: 20px;
+}
+
+.file-drop-area.compact h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.file-drop-area.compact p {
+  font-size: 0.75rem;
+}
+
+.file-drop-area.compact button {
+  margin-top: 12px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+}

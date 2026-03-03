@@ -1,0 +1,58 @@
+Update ONLY the merged Verification (Metadata + Geolocation) tool to support “Claimed Location vs Predicted Location” checks.
+
+UI CHANGE (Verification tab only)
+- Under the upload dropzone, add a small input:
+  Label: "Claimed location"
+  Placeholder: "e.g., India, New Delhi"
+- Optional second input:
+  Label: "Claimed event"
+  Placeholder: "e.g., earthquake, flood, protest"
+
+CORE BEHAVIOR
+1) Determine a “Predicted location” deterministically (demo/hard-coded):
+- Use filename-based triggers (case-insensitive) to map the uploaded file to a predicted location:
+  - if filename contains "eiffel" OR "paris" OR "31001" -> predicted = "Paris, France", confidence=0.94, reason=["Landmark match: Eiffel Tower"]
+  - if filename contains "quake_turkey" OR "turkey_32001" -> predicted = "Kahramanmaras, Turkey", confidence=0.88, reason=["Reference match: earthquake coverage image set", "Urban + rubble context consistent"]
+  - if filename contains "quake_japan" OR "japan_32002" -> predicted = "Sendai, Japan", confidence=0.86, reason=["Reference match: earthquake image set"]
+  - if filename contains "quake_india" OR "india_32003" -> predicted = "Uttarakhand, India", confidence=0.82, reason=["Reference match: India quake image set"]
+  - else predicted = "Unknown", confidence=0.35, reason=["Insufficient visual cues (demo)"]
+
+2) Compare claimed vs predicted
+- Normalize strings: lowercase, trim, remove punctuation and extra spaces.
+- Determine mismatch:
+  - If predicted is "Unknown": set riskScore=55 (MEDIUM), decision=MANUAL_REVIEW, message="Cannot confirm location; insufficient cues."
+  - Else if claimedLocation is empty: set riskScore=50 (MEDIUM), decision=MANUAL_REVIEW, message="Provide a claimed location to verify."
+  - Else if claimedLocation does NOT contain the predicted country OR key city token:
+      -> mismatch = true
+      -> riskScore=85 (CRITICAL)
+      -> decision=REJECT
+      -> message: "Claim mismatch: Not consistent with predicted location."
+  - Else:
+      -> match = true
+      -> riskScore=12 (LOW)
+      -> decision=APPROVE
+      -> message: "Claim consistent with predicted location."
+
+3) Output UI (Verification tab)
+- Show a section “Claim vs Location Check” with:
+  - Claimed: <user input>
+  - Predicted: <predicted location> (confidence %)
+  - Result badge: MATCH / MISMATCH / INSUFFICIENT DATA
+  - “Why” list using the reason[] strings
+- Keep existing metadata panel (exifStatus/editTraces/timestamp) but it can remain demo-hardcoded.
+- Ensure Manual Review option appears ONLY for MEDIUM risk (already implemented globally).
+
+EXPORT REPORT
+- Include for Verification:
+  verification: {
+    claimedLocation,
+    claimedEvent,
+    predictedLocation,
+    confidence,
+    matchStatus: "match"|"mismatch"|"insufficient",
+    reasons:[...]
+  }
+
+CONSTRAINTS
+- Do NOT modify Document, Fact Check, Propaganda logic.
+- Minimal diff; token-only colors; no new hex colors outside tokens.css.

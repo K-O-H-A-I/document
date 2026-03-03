@@ -1,0 +1,125 @@
+You are coding inside Replit.
+
+GOAL
+Build a frontend-only demo web app in React + Vite that recreates the exact layout + flow of the provided reference video UI:
+Hero upload → processing state + toast → results summary tiles → detailed results list → export report.
+NO backend, NO APIs, NO ML. Deterministic hard-coded outputs for demo recording.
+
+MUST FOLLOW
+- Use ONLY the provided CSS variable tokens (no new hex colors anywhere except in tokens.css).
+- Default to dark theme by setting <html data-theme="dark">.
+- Single-page SPA (no routing required).
+- Deterministic demo outputs:
+  - Upload filenames containing "_fake" => FAKE (high risk, CRITICAL, default REJECT)
+  - filenames containing "_real" => REAL (low risk, LOW, default APPROVE)
+  - otherwise => MANUAL REVIEW (medium risk)
+  - Text tools: if text contains "_fake" => high; "_real" => low; else medium.
+
+SETUP IN REPLIT
+1) Create a new Repl using Vite + React (JS is fine).
+2) Ensure "npm install" runs.
+3) Ensure "npm run dev" starts and the UI renders.
+
+FILES TO CREATE/EDIT
+- src/styles/tokens.css  (paste tokens exactly)
+- src/styles/ui.css      (UI classes using var(--…))
+- src/components/NavBar.jsx
+- src/components/ToolTabs.jsx
+- src/components/Toast.jsx
+- src/components/KpiTiles.jsx
+- src/components/ResultRow.jsx
+- src/App.jsx
+- src/main.jsx (import tokens.css + ui.css)
+
+TOKENS (paste EXACTLY in tokens.css):
+[PASTE MY TOKENS HERE VERBATIM]
+
+UI REQUIREMENTS (MATCH VIDEO-LIKE LAYOUT)
+Top Nav:
+- Left: "Verification Suite"
+- Center: small logo placeholder
+- Right: Online pill with green dot
+
+Hero:
+- pill label ("Advanced Verification")
+- large title (2 lines)
+- subtitle muted
+
+Main Card:
+- Tool tabs/pills: Document, Fact Check, Propaganda, Metadata, Geo
+- Document tool UI:
+  - Two buttons: "Select Files" and "Select Folder"
+  - Under buttons: 3 feature items (icons + labels): Files, Folders, Fast Processing
+- For other tools, swap the main card body:
+  - Fact Check: textarea + "Analyze Article"
+  - Propaganda: textarea + "Analyze Propaganda"
+  - Metadata: single image upload + "Analyze Metadata"
+  - Geo: single image upload + "Verify Location"
+
+Processing/Toast:
+- When user clicks Analyze/Upload:
+  - show spinner + "Processing…"
+  - show bottom-right toast "Uploading…"
+  - after ~1.5s show toast "Analysis complete" and render results
+
+Results Section:
+- "Analysis Summary" card with 4 KPI tiles (use KPI gradients):
+  - Total Files (teal gradient)
+  - Rejected (orange gradient)
+  - Manual Review (pink gradient)
+  - Approved (green gradient)
+- "Detailed Results" list:
+  - each row card shows: filename/title, priority tag (LOW/CRITICAL/MEDIUM),
+    evidence bullets (hard-coded), action required (hard-coded),
+    risk score %, and APPROVE/REJECT buttons
+  - approve/reject updates KPI counts live
+- "Export Report" button downloads a JSON report of current results/state
+
+TOOL-SPECIFIC HARD-CODED OUTPUTS
+Document Verification (multi-file):
+- If name contains "_fake" => risk 90–98, priority CRITICAL, default decision REJECT
+- If name contains "_real" => risk 5–15, priority LOW, default decision APPROVE
+- Else => risk 50–60, priority MEDIUM, default decision MANUAL REVIEW
+
+Fact Check (textarea):
+- contains "_fake" => 90% fake
+- contains "_real" => 10% fake
+- else => 62% fake
+
+Propaganda (textarea):
+- contains "_fake" => 85% propaganda
+- contains "_real" => 15% propaganda
+- else => 55% propaganda
+
+Metadata (single image):
+- "_fake" => show suspicious metadata bullets (edited software, exif mismatch, time anomaly)
+- "_real" => show clean metadata bullets
+
+Geo (single image):
+- "_fake" => low confidence, "No reliable match"
+- "_real" => high confidence, "High-confidence location verification"
+- else => medium confidence
+
+STATE
+Use React state or useReducer:
+- activeTool
+- processing boolean
+- toast state
+- selected files/text
+- results array
+- derived KPI counts
+
+STYLING
+In ui.css implement classes:
+- .card (var(--panel), border, radius, shadow)
+- .cardMuted (var(--panel2))
+- .btn .btnPrimary .btnApprove .btnReject
+- .pill tags
+- KPI gradient classes: .kpiTeal .kpiOrange .kpiPink .kpiGreen
+Use ONLY var(--…) tokens.
+
+DELIVERABLE
+- App runs with npm run dev
+- README with demo instructions:
+  - Upload files named *_real.jpg and *_fake.jpg
+  - Paste text containing _fake/_real to force outputs

@@ -1,0 +1,66 @@
+Apply ALL the following updates (minimal diff, keep existing layout/styles). Frontend-only.
+
+================================
+A) BRANDING (LOGO + SITE NAME)
+================================
+ASSET
+- Use the provided logo at: public/brand-logo.png
+- Do NOT modify the image.
+
+SITE NAME
+- Use this exact site name everywhere: "Reagvis Labs"
+  (document title, navbar text, alt text, meta tags, README, any headings that represent app name)
+
+REQUIRED CHANGES
+1) Navbar / Header
+- Replace any existing icon/logo with: <img src="/brand-logo.png" ...>
+- Place it to the LEFT of the brand name text.
+- Size: ~36–44px tall, keep aspect ratio, no stretching.
+- Alt text: "Reagvis Labs"
+- Use existing CSS token-based colors only (no new hex).
+
+2) Document title + favicon
+- In index.html:
+  - Set: <title>Reagvis Labs</title>
+  - Set favicon to the same logo:
+    <link rel="icon" type="image/png" href="/brand-logo.png" />
+  - Add meta description:
+    <meta name="description" content="Frontend-only verification demo" />
+  - If theme-color cannot accept CSS variables, omit theme-color.
+
+3) README update (if present)
+- Update README to mention "Reagvis Labs" and that branding uses public/brand-logo.png
+
+================================
+B) TOP RIGHT USER AREA
+================================
+- Remove “Alex Morgan” and “Lead Analyst” (or any personal identity text).
+- Replace with a single label: "Admin"
+- Keep the bell icon and user/avatar icon if they exist.
+- Do NOT change layout spacing—just text replacement.
+
+================================
+C) EXPORT REPORT MUST DOWNLOAD
+================================
+- Ensure the “Export Report” button downloads a file (not just UI feedback).
+- Export current app state/results as a JSON file using Blob + URL.createObjectURL + <a download>.
+- Filename format: reagvis-labs-report-YYYYMMDD-HHMMSS.json
+- JSON structure:
+  {
+    "generatedAt": "<ISO timestamp>",
+    "appName": "Reagvis Labs",
+    "activeTool": "<current tab/tool>",
+    "summary": { "total": n, "rejected": n, "manualReview": n, "approved": n },
+    "results": [ ...the current visible results objects... ]
+  }
+- Keep everything client-side; no backend.
+
+================================
+D) CONSTRAINTS (STRICT)
+================================
+- Do NOT introduce any new hex colors anywhere except tokens.css (already provided).
+- If you add CSS, it must use only var(--...) tokens.
+- Keep layout the same; only requested branding/text changes + export download.
+- After changes:
+  - Search repo for “Alex Morgan” and “Lead Analyst” and ensure they are fully removed.
+  - Search repo for '#' and ensure any hex colors exist ONLY in tokens.css.

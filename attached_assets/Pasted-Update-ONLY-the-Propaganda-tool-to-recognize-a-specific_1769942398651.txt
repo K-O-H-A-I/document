@@ -1,0 +1,53 @@
+Update ONLY the Propaganda tool to recognize a specific uploaded screenshot and show a deterministic “propaganda analysis” output, similar to how Fact Check recognizes the Sensex screenshot.
+
+DEMO TRIGGER (Propaganda only, filename-based; no OCR)
+- If uploaded file name contains any of these (case-insensitive):
+  - "25001"
+  - OR "quiet_hour"
+  - OR "gossamer_ledger"
+then force a known propaganda-case output.
+
+RECOMMENDED TEST FILE NAME
+- prop_quiet_hour_25001.png
+
+DETERMINISTIC OUTPUT (Propaganda tab UI)
+Show a “Propaganda Assessment: HIGH” / CRITICAL style result with:
+- Propaganda Score: 78% (or 75–85%)
+- Risk Level: CRITICAL
+- Decision default: REJECT
+- Fake/Real language must NOT be used here; call it “propaganda likelihood / rhetorical manipulation risk”.
+
+EVIDENCE (must display in UI as extracted evidence)
+Use these exact excerpts in the UI under “Evidence excerpts”:
+- Source header: "The Gossamer Ledger"
+- Headline: "QUIET HOUR ORDINANCE: 'FOR YOUR SAFETY,' OR FOR THEIR CONTROL?"
+- Byline/date: "By A. Thorne | October 26, 2023"
+- Commentary:
+  1) "Is 'quiet' just code for compliance?"
+  2) "Don't let them turn down the volume on your rights."
+  3) "The silence they seek is the silence of submission."
+
+INDICATORS FOUND (hard-coded list shown as chips/bullets)
+- Loaded framing / rhetorical question (“for your safety…or for their control?”)
+- Call-to-action language (“Don’t let them…”)
+- ‘They’/oppressor framing (“The silence they seek…”)
+- Emotional appeal / fear of suppression (“silence of submission”)
+
+KEEP EXISTING PROPAGANDA LOGIC FOR OTHER FILES
+- For all non-trigger uploads, keep the current propaganda scoring logic unchanged (the keyword/indicator system you already implemented).
+- Do not touch Document, Fact Check, Verification tabs.
+
+EXPORT REPORT
+For this triggered file, include in JSON under propaganda:
+{
+  trigger: "filename:25001",
+  score: 78,
+  riskLevel: "CRITICAL",
+  indicatorsFound: [...],
+  evidenceExcerpts: [...],
+  matchedFacts: []   // can be empty
+}
+
+CONSTRAINTS
+- Minimal diff, no new hex colors outside tokens.css, token-only styling.
+- Manual Review must remain ONLY for medium-risk results; since this is CRITICAL, no manual-review action should appear.

@@ -215,6 +215,14 @@ export function ResultRow({ result, onApprove, onReject, onManualReview }: Resul
           >
             <div className="p-4 grid md:grid-cols-2 gap-6">
               <div className="space-y-6">
+                {result.summary && (
+                  <div>
+                    <h5 className="text-sm font-semibold text-[var(--text)] mb-2">Summary</h5>
+                    <p className="text-sm text-[var(--muted)] leading-relaxed">
+                      {result.summary}
+                    </p>
+                  </div>
+                )}
                 {!result.metadata && (
                   <div>
                     <h5 className="text-sm font-semibold text-[var(--text)] mb-3 flex items-center gap-2">

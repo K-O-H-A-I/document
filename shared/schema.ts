@@ -12,6 +12,7 @@ export const analysisResults = pgTable("analysis_results", {
   priority: text("priority").notNull(), // 'LOW', 'MEDIUM', 'CRITICAL'
   decision: text("decision").notNull(), // 'APPROVE', 'REJECT', 'MANUAL_REVIEW'
   evidence: jsonb("evidence").$type<string[]>().notNull(),
+  summary: text("summary"),
   actionRequired: text("action_required"),
   timestamp: timestamp("timestamp").defaultNow(),
   previewUrl: text("preview_url"),

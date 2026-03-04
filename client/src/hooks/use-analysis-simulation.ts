@@ -579,6 +579,23 @@ const extractVerdictAndScore = (value: any) => {
   return { verdict: "", score: null };
 };
 
+const extractSummary = (value: any) => {
+  if (!value || typeof value !== "object") return null;
+  const candidates = [
+    value.summary,
+    value.output?.summary,
+    value.result?.summary,
+    value.data?.summary,
+    value.data?.output?.summary,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return null;
+};
+
 const resolveResultsPayload = (data: any) => {
   if (!data || typeof data !== "object") return {};
   const candidates = [data.results, data.outputs, data.output];
@@ -830,6 +847,7 @@ export function useAnalysisSimulation() {
           : normalizedName.includes("_real")
             ? "Real"
             : null;
+        const summary = extractSummary(analysis);
         const riskScoreRaw =
           forcedVerdict === "Fake"
             ? 92
@@ -853,6 +871,7 @@ export function useAnalysisSimulation() {
           priority,
           decision,
           evidence: forcedVerdict ? [forcedVerdict] : [`Risk score: ${riskScore}`],
+          summary: summary || undefined,
           actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : undefined,
           timestamp: new Date(now).toISOString(),
           previewUrl,

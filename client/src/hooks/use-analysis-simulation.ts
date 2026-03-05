@@ -847,7 +847,7 @@ export function useAnalysisSimulation() {
           : normalizedName.includes("_real")
             ? "Real"
             : null;
-        const summary = extractSummary(analysis);
+        const summary = extractSummary(analysis) || "Summary unavailable.";
         const riskScoreRaw =
           forcedVerdict === "Fake"
             ? 92
@@ -871,7 +871,7 @@ export function useAnalysisSimulation() {
           priority,
           decision,
           evidence: forcedVerdict ? [forcedVerdict] : [`Risk score: ${riskScore}`],
-          summary: summary || undefined,
+          summary,
           actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : undefined,
           timestamp: new Date(now).toISOString(),
           previewUrl,

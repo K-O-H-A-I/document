@@ -165,6 +165,11 @@ export function ResultRow({ result, onApprove, onReject, onManualReview }: Resul
                 {result.filename}
               </span>
             </div>
+            {result.summary && (
+              <p className="text-xs text-[var(--muted)] leading-relaxed line-clamp-2">
+                {result.summary}
+              </p>
+            )}
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--muted)] uppercase tracking-wider font-semibold">
                 {result.toolType}
@@ -215,14 +220,12 @@ export function ResultRow({ result, onApprove, onReject, onManualReview }: Resul
           >
             <div className="p-4 grid md:grid-cols-2 gap-6">
               <div className="space-y-6">
-                {result.summary && (
-                  <div>
-                    <h5 className="text-sm font-semibold text-[var(--text)] mb-2">Summary</h5>
-                    <p className="text-sm text-[var(--muted)] leading-relaxed">
-                      {result.summary}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <h5 className="text-sm font-semibold text-[var(--text)] mb-2">Summary</h5>
+                  <p className="text-sm text-[var(--muted)] leading-relaxed">
+                    {result.summary || "Summary unavailable."}
+                  </p>
+                </div>
                 {!result.metadata && (
                   <div>
                     <h5 className="text-sm font-semibold text-[var(--text)] mb-3 flex items-center gap-2">

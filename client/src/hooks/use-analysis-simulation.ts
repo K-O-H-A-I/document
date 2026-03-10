@@ -839,6 +839,7 @@ export function useAnalysisSimulation() {
 
         const bucket = resolveBucketFromUploadUrl(uploadUrl) || DOCUMENT_BUCKET_FALLBACK;
         const analysis = await analyzeDocument(bucket, key);
+        console.log("Document analysis response:", analysis);
         setToastMessage("success");
 
         const normalizedName = normalizeFilename(file.name);

@@ -4,7 +4,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover {
@@ -49,9 +49,24 @@
   border-radius: var(--radius);
   font-weight: 600;
   font-size: 0.95rem;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   cursor: pointer;
   border: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.85;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-primary {
@@ -203,4 +218,53 @@
   margin-top: 12px;
   padding: 6px 16px;
   font-size: 0.75rem;
+}
+
+/* Subtle app background glow */
+.app-shell {
+  position: relative;
+  overflow-x: hidden;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(600px 300px at 15% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
+    radial-gradient(500px 260px at 85% 10%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 70%),
+    radial-gradient(700px 320px at 50% 60%, color-mix(in srgb, var(--accent-4) 12%, transparent), transparent 75%);
+}
+
+.section-glow {
+  position: relative;
+}
+
+.section-glow::before {
+  content: "";
+  position: absolute;
+  inset: -40px -20px auto -20px;
+  height: 220px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.section-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-strong);
+}
+
+.hover-elevate:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-strong);
+}
+
+.active-elevate-2:active {
+  transform: scale(0.98);
 }

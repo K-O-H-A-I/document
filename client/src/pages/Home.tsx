@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { NavBar } from '@/components/NavBar';
 import { KpiTiles } from '@/components/KpiTiles';
 import { MainCard } from '@/components/MainCard';
-import { Search, Download, Loader2, ChevronDown, FileText, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { Search, Download, Loader2, ChevronDown, FileText, X, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -283,6 +283,10 @@ export default function Home() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+  };
+
+  const handleRefresh = () => {
+    window.location.reload();
   };
 
   const toggleExpand = (panel: PanelKey, runId: string) => {
@@ -614,9 +618,20 @@ export default function Home() {
               <h2 className="heading-2">Recent Analysis</h2>
               <p className="text-sm text-[var(--muted)]">Qwen and GPT results for the same uploads.</p>
             </div>
-            <span className="text-xs text-[var(--muted)]">
-              {qwenRuns.length} run{qwenRuns.length === 1 ? '' : 's'} total
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleRefresh}
+                className="btn btn-secondary h-9 px-3 text-xs font-semibold tracking-wide uppercase"
+                aria-label="Refresh page"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Refresh
+              </button>
+              <span className="text-xs text-[var(--muted)]">
+                {qwenRuns.length} run{qwenRuns.length === 1 ? '' : 's'} total
+              </span>
+            </div>
           </div>
 
           <motion.div

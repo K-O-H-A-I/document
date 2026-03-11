@@ -873,9 +873,12 @@ export function useAnalysisSimulation() {
           decision,
           evidence: forcedVerdict ? [forcedVerdict] : [`Risk score: ${riskScore}`],
           summary,
-          actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : undefined,
-          timestamp: new Date(now).toISOString(),
+          actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+          timestamp: new Date(now),
           previewUrl,
+          previewUrls: null,
+          metadata: null,
+          geolocation: null,
         };
 
         setResults((prev) => {
@@ -1041,14 +1044,12 @@ export function useAnalysisSimulation() {
         );
         const { priority, decision } = mapRiskToDecision(riskScore);
         const isRowFaceMatch = isFaceMatchRow(row);
-        const previewUrl = previewFile ? URL.createObjectURL(previewFile) : undefined;
+        const previewUrl = previewFile ? URL.createObjectURL(previewFile) : null;
         const previewUrls =
           isRowFaceMatch && faceMatchPreviewUrls && faceMatchPreviewUrls.length > 0
             ? faceMatchPreviewUrls
-            : undefined;
-        const resolvedToolType = toolType === 'document'
-          ? 'document'
-          : ((row.mediaType || toolType) as ToolType);
+            : null;
+        const resolvedToolType = (row.mediaType || toolType) as ToolType;
         return {
           id: nextIdRef.current++,
           filename: row.name,
@@ -1057,10 +1058,13 @@ export function useAnalysisSimulation() {
           priority,
           decision,
           evidence: [displayVerdict],
-          actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : undefined,
-          timestamp: new Date(now).toISOString(),
+          summary: null,
+          actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+          timestamp: new Date(now),
           previewUrl,
           previewUrls,
+          metadata: null,
+          geolocation: null,
         };
       });
 
@@ -1075,9 +1079,13 @@ export function useAnalysisSimulation() {
           priority: faceMatchDecision.priority,
           decision: faceMatchDecision.decision,
           evidence: faceMatchInfo.evidence,
-          actionRequired: undefined,
-          timestamp: new Date(now).toISOString(),
-          previewUrls: faceMatchPreviewUrls,
+          summary: null,
+          actionRequired: null,
+          timestamp: new Date(now),
+          previewUrl: null,
+          previewUrls: faceMatchPreviewUrls ?? null,
+          metadata: null,
+          geolocation: null,
         });
       }
 

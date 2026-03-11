@@ -59,7 +59,7 @@ export function ResultRow({ result, onApprove, onReject, onManualReview }: Resul
 
     return (
       <img
-        src={result.previewUrl}
+        src={result.previewUrl ?? undefined}
         alt="File preview"
         className={`${commonClass} object-cover`}
         onClick={handleClick}
@@ -93,7 +93,7 @@ export function ResultRow({ result, onApprove, onReject, onManualReview }: Resul
     } else {
       content = (
         <img
-          src={result.previewUrl}
+          src={result.previewUrl ?? undefined}
           alt="File preview"
           className="max-h-[80vh] max-w-[90vw] rounded-[var(--radius)]"
           onClick={handleClose}

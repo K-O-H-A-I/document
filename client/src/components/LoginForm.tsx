@@ -90,7 +90,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       } catch (error) {
         const err = error as ApiError;
         const message = err?.message || "Login failed";
-        if (isAuthError(err)) {
+        if (err?.status === 401) {
+          toast({
+            title: "Invalid credentials",
+            description: "Wrong username or password.",
+          });
+        } else if (isAuthError(err)) {
           toast({
             title: "Session expired",
             description: "Please login again.",

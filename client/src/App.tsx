@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Router as WouterRouter, Switch, Route } from "wouter";
+import { Router as WouterRouter, Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -15,6 +15,7 @@ import "@/styles/ui.css";
 
 function AppRouter() {
   const [isAuthed, setIsAuthed] = useState(false);
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     const syncAuth = () => {
@@ -30,12 +31,19 @@ function AppRouter() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isAuthed && location !== "/login") {
+      setLocation("/login");
+    }
+    if (isAuthed && location === "/login") {
+      setLocation("/");
+    }
+  }, [isAuthed, location, setLocation]);
+
   return (
     <WouterRouter base={import.meta.env.BASE_URL}>
       <Switch>
-        <Route path="/">
-          {isAuthed ? <Home /> : <Login />}
-        </Route>
+        <Route path="/">{isAuthed ? <Home /> : <Login />}</Route>
         <Route path="/login">
           {isAuthed ? <Home /> : <Login />}
         </Route>

@@ -27,8 +27,8 @@ export function NavBar() {
     };
   }, []);
 
-  const truncatedUserLabel = useMemo(
-    () => (userLabel.length > 12 ? `${userLabel.slice(0, 12)}…` : userLabel),
+const truncatedUserLabel = useMemo(
+    () => (userLabel.length > 25 ? `${userLabel.slice(0, 25)}…` : userLabel),
     [userLabel]
   );
 

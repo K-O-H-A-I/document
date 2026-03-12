@@ -830,61 +830,55 @@ export function useAnalysisSimulation() {
 
     try {
       if (toolType === "document") {
-        const file = files[0];
-        fileCacheRef.current.set(file.name.toLowerCase(), file);
+        const batchId = generateJobId();
+        for (const file of files) {
+          fileCacheRef.current.set(file.name.toLowerCase(), file);
+          setToastMessage("submitting");
 
-        const { uploadUrl, key, contentType } = await requestDocumentPresign(file);
-        await uploadToS3(file, uploadUrl, contentType);
-        setToastMessage("submitted");
+          const { uploadUrl, key, contentType } = await requestDocumentPresign(file);
+          await uploadToS3(file, uploadUrl, contentType);
+          setToastMessage("submitted");
 
-        const bucket = resolveBucketFromUploadUrl(uploadUrl) || DOCUMENT_BUCKET_FALLBACK;
-        const analysis = await analyzeDocument(bucket, key);
-        setToastMessage("success");
+          const bucket = resolveBucketFromUploadUrl(uploadUrl) || DOCUMENT_BUCKET_FALLBACK;
+          const analysis = await analyzeDocument(bucket, key);
+          setToastMessage("success");
 
-        const normalizedName = normalizeFilename(file.name);
-        const forcedVerdict = normalizedName.includes("_fake")
-          ? "Fake"
-          : normalizedName.includes("_real")
-            ? "Real"
-            : null;
-        const summary = extractSummary(analysis) || "Summary unavailable.";
-        const riskScoreRaw =
-          forcedVerdict === "Fake"
-            ? 92
-            : forcedVerdict === "Real"
-              ? 8
-              : typeof analysis.risk_score === "number"
-                ? analysis.risk_score
-                : typeof analysis.riskScore === "number"
-                  ? analysis.riskScore
-                  : 50;
-        const riskScore = Math.max(0, Math.min(100, Math.round(riskScoreRaw)));
-        const { priority, decision } = mapRiskToDecision(riskScore);
-        const previewUrl = URL.createObjectURL(file);
-        const now = Date.now();
+          const summary = extractSummary(analysis) || "Summary unavailable.";
+          const riskScoreRaw =
+            typeof analysis.risk_score === "number"
+              ? analysis.risk_score
+              : typeof analysis.riskScore === "number"
+                ? analysis.riskScore
+                : 50;
+          const riskScore = Math.max(0, Math.min(100, Math.round(riskScoreRaw)));
+          const { priority, decision } = mapRiskToDecision(riskScore);
+          const previewUrl = URL.createObjectURL(file);
+          const now = Date.now();
 
-        const docResult: AnalysisResult = {
-          id: nextIdRef.current++,
-          filename: file.name,
-          toolType: "document",
-          riskScore,
-          priority,
-          decision,
-          evidence: forcedVerdict ? [forcedVerdict] : [`Risk score: ${riskScore}`],
-          summary,
-          actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
-          timestamp: new Date(now),
-          previewUrl,
-          previewUrls: null,
-          metadata: null,
-          geolocation: null,
-        };
+          const docResult: AnalysisResult = {
+            id: nextIdRef.current++,
+            filename: file.name,
+            toolType: "document",
+            riskScore,
+            priority,
+            decision,
+            evidence: [`Risk score: ${riskScore}`],
+            summary,
+            batchId,
+            actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+            timestamp: new Date(now),
+            previewUrl,
+            previewUrls: null,
+            metadata: null,
+            geolocation: null,
+          };
 
-        setResults((prev) => {
-          const merged = [docResult, ...prev];
-          setStats(recomputeStats(merged));
-          return merged;
-        });
+          setResults((prev) => {
+            const merged = [docResult, ...prev];
+            setStats(recomputeStats(merged));
+            return merged;
+          });
+        }
 
         return;
       }
@@ -1023,24 +1017,14 @@ export function useAnalysisSimulation() {
       }
       const newResults: AnalysisResult[] = effectiveRows.map((row) => {
         const previewFile = findPreviewFile(row, fileCacheRef.current);
-        const hasRealOneVideo = originalVideoNamesRef.current.has("real_1.mp4");
-        const isRealOneVideo =
-          toolType === 'video' &&
-          (hasRealOneVideo ||
-            normalizeFilename(previewFile?.name || "") === "real_1.mp4" ||
-            normalizeFilename(row.name) === "real_1.mp4" ||
-            normalizeFilename(row.sourceKey || "") === "real_1.mp4");
-        const verdictForScoring = isRealOneVideo ? "Live" : row.verdict;
-        const verdictLower = verdictForScoring.toLowerCase();
+        const verdictLower = row.verdict.toLowerCase();
         const displayVerdict =
           row.mediaType === 'video' && (verdictLower === 'pass' || verdictLower === 'fail')
             ? verdictLower === 'pass'
               ? 'Live'
               : 'Not Live'
-            : verdictForScoring;
-        const riskScore = mapVerdictToRisk(
-          isRealOneVideo ? { ...row, verdict: verdictForScoring } : row
-        );
+            : row.verdict;
+        const riskScore = mapVerdictToRisk(row);
         const { priority, decision } = mapRiskToDecision(riskScore);
         const isRowFaceMatch = isFaceMatchRow(row);
         const previewUrl = previewFile ? URL.createObjectURL(previewFile) : null;

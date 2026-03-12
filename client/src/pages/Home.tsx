@@ -1,16 +1,16 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { NavBar } from '@/components/NavBar';
 import { KpiTiles } from '@/components/KpiTiles';
 import { MainCard } from '@/components/MainCard';
+import { useAnalysisSimulation } from '@/hooks/use-analysis-simulation';
 import { Search, Download, Loader2, ChevronDown, FileText, X, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
+import { AnalysisResult, ToolType } from '@shared/schema';
 
 type Decision = 'APPROVE' | 'MANUAL_REVIEW' | 'REJECT';
 type PanelKey = 'qwen' | 'gpt';
-type ModelName = 'Qwen' | 'GPT';
 
 type FileResult = {
   id: string;
@@ -18,11 +18,11 @@ type FileResult = {
   sizeLabel: string;
   isPdf: boolean;
   previewUrl: string | null;
-  sourceFile: File;
   verdict: string;
   riskScore: number;
   decision: Decision;
-  summary: string;
+  summary: string | null;
+  createdAt: Date;
 };
 
 type AnalysisRun = {
@@ -57,171 +57,100 @@ const decisionTextClass: Record<Decision, string> = {
   REJECT: 'text-[var(--danger)]',
 };
 
-const formatBytes = (bytes: number) => {
-  if (!Number.isFinite(bytes)) return '';
-  const mb = bytes / (1024 * 1024);
-  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-};
-
-const evaluateFilename = (filename: string) => {
-  const lower = filename.toLowerCase();
-  if (lower.includes('_fake')) return { verdict: 'Fake', riskScore: 92 };
-  if (lower.includes('_real')) return { verdict: 'Real', riskScore: 12 };
-  return { verdict: 'Unclear', riskScore: 55 };
-};
-
-const decisionFromScore = (score: number): Decision => {
-  if (score >= 70) return 'REJECT';
-  if (score >= 40) return 'MANUAL_REVIEW';
-  return 'APPROVE';
-};
-
-const summaryForModel = (model: ModelName, verdict: string) => {
-  if (verdict === 'Fake') {
-    return model === 'Qwen'
-      ? 'Qwen flagged layer inconsistencies and suspicious metadata.'
-      : 'GPT detected high-risk manipulation signals in the document.';
-  }
-  if (verdict === 'Real') {
-    return model === 'Qwen'
-      ? 'Qwen saw consistent structure with intact metadata.'
-      : 'GPT found low-risk signals and stable compression patterns.';
-  }
-  return model === 'Qwen'
-    ? 'Qwen found mixed indicators; manual review suggested.'
-    : 'GPT suggests manual review due to ambiguous signals.';
-};
-
-const buildRun = (model: ModelName, files: File[], runId: string, createdAt: Date): AnalysisRun => {
-  const results = files.map((file, index) => {
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    const isImage = !isPdf && /\.(jpe?g|png)$/i.test(file.name);
-    const previewUrl = isImage ? URL.createObjectURL(file) : null;
-    const { verdict, riskScore } = evaluateFilename(file.name);
-    const decision = decisionFromScore(riskScore);
-    return {
-      id: `${runId}-${index}`,
-      name: file.name,
-      sizeLabel: formatBytes(file.size),
-      isPdf,
-      previewUrl,
-      sourceFile: file,
-      verdict,
-      riskScore,
-      decision,
-      summary: summaryForModel(model, verdict),
-    };
-  });
-
-  const overallDecision = results.reduce<Decision>((acc, item) => {
-    return decisionOrder[item.decision] > decisionOrder[acc] ? item.decision : acc;
-  }, 'APPROVE');
-
-  return {
-    id: `${model}-${runId}`,
-    runId,
-    createdAt,
-    overallDecision,
-    files: results,
-  };
-};
-
-const computeStats = (runs: AnalysisRun[]) => {
-  return runs.reduce(
-    (acc, run) => {
-      run.files.forEach((file) => {
-        acc.total += 1;
-        if (file.decision === 'REJECT') acc.rejected += 1;
-        if (file.decision === 'MANUAL_REVIEW') acc.manual += 1;
-        if (file.decision === 'APPROVE') acc.approved += 1;
-      });
-      return acc;
-    },
-    { total: 0, rejected: 0, manual: 0, approved: 0 }
-  );
-};
-
 const formatRunTime = (date: Date) => {
   const diff = Date.now() - date.getTime();
   if (diff < 60_000) return 'Just now';
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
+const toFileResult = (result: AnalysisResult): FileResult => {
+  const filename = result.filename || 'Untitled';
+  const isPdf = filename.toLowerCase().endsWith('.pdf');
+  const createdAt = result.timestamp ? new Date(result.timestamp) : new Date();
+  const summary = typeof result.summary === 'string' && result.summary.trim().length > 0
+    ? result.summary
+    : null;
+
+  return {
+    id: String(result.id),
+    name: filename,
+    sizeLabel: '—',
+    isPdf,
+    previewUrl: result.previewUrl || null,
+    verdict: result.evidence && result.evidence.length > 0 ? result.evidence[0] : '—',
+    riskScore: result.riskScore,
+    decision: result.decision as Decision,
+    summary,
+    createdAt,
+  };
+};
+
+const toRuns = (results: AnalysisResult[]): AnalysisRun[] => {
+  const grouped = new Map<string, FileResult[]>();
+
+  results.forEach((result) => {
+    const batchId = result.batchId || `result-${result.id}`;
+    const file = toFileResult(result);
+    const existing = grouped.get(batchId);
+    if (existing) {
+      existing.push(file);
+    } else {
+      grouped.set(batchId, [file]);
+    }
+  });
+
+  return Array.from(grouped.entries())
+    .map(([batchId, files]) => {
+      const createdAt = files.reduce(
+        (latest, item) => (item.createdAt > latest ? item.createdAt : latest),
+        files[0]?.createdAt || new Date()
+      );
+      const overallDecision = files.reduce<Decision>((acc, item) => {
+        return decisionOrder[item.decision] > decisionOrder[acc] ? item.decision : acc;
+      }, 'APPROVE');
+      return {
+        id: batchId,
+        runId: batchId,
+        createdAt,
+        overallDecision,
+        files,
+      };
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+};
+
 export default function Home() {
-  const [qwenRuns, setQwenRuns] = useState<AnalysisRun[]>([]);
-  const [gptRuns, setGptRuns] = useState<AnalysisRun[]>([]);
+  const activeTool: ToolType = 'document';
+  const {
+    isAnalyzing,
+    results,
+    stats,
+    toastMessage,
+    runAnalysis,
+  } = useAnalysisSimulation();
+
+  const qwenRuns = useMemo(() => toRuns(results.filter((item) => item.toolType === activeTool)), [
+    results,
+    activeTool,
+  ]);
+  const gptRuns: AnalysisRun[] = [];
+
   const [loading, setLoading] = useState({ qwen: false, gpt: false });
   const [expandedRuns, setExpandedRuns] = useState<{ qwen: Record<string, boolean>; gpt: Record<string, boolean> }>({
     qwen: {},
     gpt: {},
   });
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<FileResult | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const pendingRef = useRef(0);
-  const runsRef = useRef<{ qwen: AnalysisRun[]; gpt: AnalysisRun[] }>({ qwen: [], gpt: [] });
-
-  const stats = useMemo(() => computeStats(qwenRuns), [qwenRuns]);
-
-  const runAnalysis = ({ files }: { files: File[] }) => {
-    if (!files || files.length === 0) return;
-
-    const runId = `run-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
-    const createdAt = new Date();
-    const qwenDelay = 1000 + Math.random() * 1000;
-    const gptDelay = 1000 + Math.random() * 1000;
-
-    pendingRef.current = 2;
-    setIsAnalyzing(true);
-    setToastMessage('Processing');
-    setLoading({ qwen: true, gpt: true });
-
-    const finalize = () => {
-      pendingRef.current -= 1;
-      if (pendingRef.current <= 0) {
-        setIsAnalyzing(false);
-        setToastMessage('Completed');
-        window.setTimeout(() => setToastMessage(null), 1600);
-      }
-    };
-
-    window.setTimeout(() => {
-      setQwenRuns((prev) => [buildRun('Qwen', files, runId, createdAt), ...prev]);
-      setLoading((prev) => ({ ...prev, qwen: false }));
-      finalize();
-    }, qwenDelay);
-
-    window.setTimeout(() => {
-      setGptRuns((prev) => [buildRun('GPT', files, runId, createdAt), ...prev]);
-      setLoading((prev) => ({ ...prev, gpt: false }));
-      finalize();
-    }, gptDelay);
-  };
 
   useEffect(() => {
-    runsRef.current = { qwen: qwenRuns, gpt: gptRuns };
-  }, [qwenRuns, gptRuns]);
+    setLoading({ qwen: isAnalyzing, gpt: false });
+  }, [isAnalyzing]);
 
   useEffect(() => {
     if (!previewFile) return;
-
-    const url = URL.createObjectURL(previewFile.sourceFile);
-    if (previewFile.isPdf) {
-      setPreviewPdfUrl(url);
-      setPreviewUrl(null);
-    } else {
-      setPreviewUrl(url);
-      setPreviewPdfUrl(null);
-    }
     setPreviewZoom(1);
-
-    return () => {
-      URL.revokeObjectURL(url);
-    };
   }, [previewFile]);
 
   useEffect(() => {
@@ -245,35 +174,24 @@ export default function Home() {
     };
   }, [previewFile]);
 
-  useEffect(() => {
-    return () => {
-      const allUrls: string[] = [];
-      runsRef.current.qwen.forEach((run) => {
-        run.files.forEach((file) => {
-          if (file.previewUrl) allUrls.push(file.previewUrl);
-        });
-      });
-      runsRef.current.gpt.forEach((run) => {
-        run.files.forEach((file) => {
-          if (file.previewUrl) allUrls.push(file.previewUrl);
-        });
-      });
-      allUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, []);
-
   const handleExport = () => {
-    if (qwenRuns.length === 0 && gptRuns.length === 0) return;
+    if (results.length === 0) return;
     const exportData = {
       generatedAt: new Date().toISOString(),
       appName: 'Reagvis Labs Pvt. Ltd.',
-      runs: {
-        qwen: qwenRuns,
-        gpt: gptRuns,
+      activeTool,
+      summary: {
+        total: stats.total,
+        rejected: stats.rejected,
+        manualReview: stats.manual,
+        approved: stats.approved,
       },
+      results,
     };
 
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const dataStr =
+      'data:text/json;charset=utf-8,' +
+      encodeURIComponent(JSON.stringify(exportData, null, 2));
     const timestamp = new Date().toISOString().replace(/[:.]/g, '').replace('T', '-').split('Z')[0];
     const filename = `reagvis-labs-report-${timestamp}.json`;
 
@@ -444,7 +362,9 @@ export default function Home() {
                                 </div>
                               </div>
                             </div>
-                            <div className="mt-2 text-xs text-[var(--muted)]">{file.summary}</div>
+                            <div className="mt-2 text-xs text-[var(--muted)]">
+                              {file.summary || 'Summary unavailable.'}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -529,9 +449,9 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (previewPdfUrl) window.open(previewPdfUrl, '_blank');
+                    if (previewFile.previewUrl) window.open(previewFile.previewUrl, '_blank');
                   }}
-                  disabled={!previewPdfUrl}
+                  disabled={!previewFile.previewUrl}
                   className="btn btn-secondary h-9 px-4 text-xs font-semibold uppercase tracking-wider disabled:opacity-100 disabled:cursor-not-allowed"
                   aria-label="Open PDF"
                 >
@@ -539,10 +459,10 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              previewUrl && (
+              previewFile.previewUrl && (
                 <div className="w-full h-full flex items-center justify-center">
                   <img
-                    src={previewUrl}
+                    src={previewFile.previewUrl}
                     alt={previewFile.name}
                     className="max-w-full max-h-[calc(88vh-110px)] object-contain transition-transform"
                     style={{ transform: `scale(${previewZoom})` }}
@@ -563,7 +483,7 @@ export default function Home() {
       <main className="max-w-[1280px] mx-auto px-6 pt-8 relative z-10">
         {/* Hero Section */}
         <div className="mb-8 text-center md:text-left section-glow">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col md:flex-row md:items-end justify-between gap-6"
@@ -577,9 +497,9 @@ export default function Home() {
               </p>
             </div>
 
-            <button 
+            <button
               onClick={handleExport}
-              disabled={qwenRuns.length === 0 && gptRuns.length === 0}
+              disabled={results.length === 0}
               className="btn btn-secondary disabled:opacity-100 disabled:cursor-not-allowed active:scale-[0.98] h-11 px-6 text-sm font-semibold tracking-wide uppercase transition-all hover-elevate"
             >
               <Download className="w-4 h-4" />
@@ -590,23 +510,23 @@ export default function Home() {
 
         {/* KPI Tiles */}
         <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.1 }}
-           className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
         >
           <KpiTiles stats={stats} />
         </motion.div>
 
         {/* Main Analysis Card */}
         <motion.div
-           initial={{ opacity: 0, x: -10 }}
-           animate={{ opacity: 1, x: 0 }}
-           transition={{ duration: 0.2 }}
-           className="section-glow"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2 }}
+          className="section-glow"
         >
-          <MainCard 
-            onAnalyze={runAnalysis}
+          <MainCard
+            onAnalyze={(data) => runAnalysis({ ...data, toolType: activeTool })}
             isAnalyzing={isAnalyzing}
           />
         </motion.div>
@@ -616,7 +536,7 @@ export default function Home() {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="heading-2">Recent Analysis</h2>
-              <p className="text-sm text-[var(--muted)]">Qwen and GPT results for the same uploads.</p>
+              <p className="text-sm text-[var(--muted)]">Qwen shows real results, GPT will be enabled later.</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -658,9 +578,9 @@ export default function Home() {
             className="fixed bottom-8 right-8 z-[100] bg-[var(--panel)] border border-[var(--border)] shadow-[var(--shadow-strong)] rounded-[var(--radius)] p-4 flex items-center gap-4 min-w-[300px]"
           >
             {isAnalyzing ? (
-               <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin" />
+              <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin" />
             ) : (
-               <div className="w-3 h-3 rounded-full bg-[var(--ok)] shadow-[0_0_12px_var(--ok)]" />
+              <div className="w-3 h-3 rounded-full bg-[var(--ok)] shadow-[0_0_12px_var(--ok)]" />
             )}
             <div className="flex flex-col">
               <span className="font-bold text-[var(--text)] text-sm tracking-tight">

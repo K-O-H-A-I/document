@@ -1,5 +1,19 @@
 import { useCallback, useRef, useState } from 'react';
 import type { ToolType, AnalysisResult, KpiStats } from '@shared/schema';
+import {
+  analyzeDocument as apiAnalyzeDocument,
+  fetchHistory,
+  fetchStats,
+  getToken,
+  getUploadUrl,
+  uploadFile,
+  clearToken,
+  isAuthError,
+  type ApiError,
+  type HistoryItem,
+  type StatsResponse,
+} from '@/lib/doc-risk-api';
+import { toast } from '@/hooks/use-toast';
 
 type AnalysisRequest = {
   files: File[];
@@ -82,6 +96,16 @@ const DOCUMENT_API_BASE = DOCUMENT_API_URL.replace(/\/get-upload-url\/?$/, "");
 const DOCUMENT_ANALYZE_URL = `${DOCUMENT_API_BASE}/analyze`;
 const DOCUMENT_API_KEY = "";
 const DOCUMENT_BUCKET_FALLBACK = "doc-risk-demo-reagvis";
+const DOC_RISK_BUCKET = "doc-risk-demo-reagvis";
+const PHASE_MESSAGES = [
+  "Analyzing document structure…",
+  "Checking text alignment…",
+  "Detecting manipulation artifacts…",
+  "Validating authenticity signals…",
+  "Finalizing risk score…",
+];
+const MIN_SCAN_DELAY_MS = 4000;
+const MAX_SCAN_DELAY_MS = 6000;
 const ORIGIN_VERIFY = String(runtimeConfig.ORIGIN_VERIFY || (window as any).ORIGIN_VERIFY || "").trim();
 const ORIGIN_VERIFY_HEADER = String(
   runtimeConfig.ORIGIN_VERIFY_HEADER || "x-origin-verify"
@@ -330,6 +354,19 @@ const fetchJob = async (
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const redirectToLogin = () => {
+  window.location.assign(`${import.meta.env.BASE_URL}login`);
+};
+
+const handleAuthFailure = (message?: string) => {
+  clearToken();
+  toast({
+    title: "Session expired",
+    description: message || "Please login again.",
+  });
+  redirectToLogin();
+};
 
 const collectFaceMatchFiles = (files: File[]) => {
   const matches: { target?: File; input?: File; swapped?: File } = {};
@@ -774,6 +811,33 @@ const mapRiskToDecision = (riskScore: number) => {
   return { priority: "LOW", decision: "APPROVE" } as const;
 };
 
+const mapHistoryToResults = (history: HistoryItem[]): AnalysisResult[] => {
+  return history.map((item, index) => {
+    const riskScore = Math.max(0, Math.min(100, Math.round(item.risk_score)));
+    const { priority, decision } = mapRiskToDecision(riskScore);
+    const filename = filenameForDisplay(item.key || `scan-${index + 1}`);
+    const timestamp = item.scan_time ? new Date(item.scan_time) : new Date();
+
+    return {
+      id: index + 1,
+      filename,
+      toolType: "document",
+      riskScore,
+      priority,
+      decision,
+      evidence: [`Risk score: ${riskScore}`],
+      summary: item.summary || null,
+      batchId: item.scan_time || `history-${index + 1}`,
+      actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+      timestamp,
+      previewUrl: null,
+      previewUrls: null,
+      metadata: null,
+      geolocation: null,
+    };
+  });
+};
+
 const buildFaceMatchEvidence = (imageKeys: string[]) => {
   const names: { target?: string; input?: string; swapped?: string } = {};
   imageKeys.forEach((key) => {
@@ -818,9 +882,68 @@ export function useAnalysisSimulation() {
   const [stats, setStats] = useState<KpiStats>({ total: 0, rejected: 0, manual: 0, approved: 0 });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [usageStats, setUsageStats] = useState<StatsResponse | null>(null);
+  const [scanDisabled, setScanDisabled] = useState(false);
+  const [scanDisabledReason, setScanDisabledReason] = useState<string | null>(null);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const nextIdRef = useRef(1);
   const fileCacheRef = useRef<Map<string, File>>(new Map());
   const originalVideoNamesRef = useRef<Set<string>>(new Set());
+
+  const refreshStats = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      handleAuthFailure("Session expired. Please login again.");
+      return;
+    }
+    try {
+      const data = await fetchStats(token);
+      setUsageStats(data);
+      if (data.tokens_used_today >= data.token_limit_daily) {
+        setScanDisabled(true);
+        setScanDisabledReason("You have reached today’s scan limit.");
+      } else {
+        setScanDisabled(false);
+        setScanDisabledReason(null);
+      }
+    } catch (error) {
+      const err = error as ApiError;
+      if (err && isAuthError(err)) {
+        handleAuthFailure("Session expired. Please login again.");
+        return;
+      }
+      toast({
+        title: "Stats unavailable",
+        description: err?.message || "AI service temporarily unavailable.",
+      });
+    }
+  }, []);
+
+  const loadHistory = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      handleAuthFailure("Session expired. Please login again.");
+      return;
+    }
+    try {
+      const history = await fetchHistory(token);
+      setHistoryItems(history);
+      const mapped = mapHistoryToResults(history);
+      setResults(mapped);
+      setStats(recomputeStats(mapped));
+      nextIdRef.current = mapped.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+    } catch (error) {
+      const err = error as ApiError;
+      if (err && isAuthError(err)) {
+        handleAuthFailure("Session expired. Please login again.");
+        return;
+      }
+      toast({
+        title: "History unavailable",
+        description: err?.message || "AI service temporarily unavailable.",
+      });
+    }
+  }, []);
 
   const runAnalysis = useCallback(async ({ files, toolType, imageModels }: AnalysisRequest) => {
     if (!files || files.length === 0) return;
@@ -830,18 +953,29 @@ export function useAnalysisSimulation() {
 
     try {
       if (toolType === "document") {
+        const token = getToken();
+        if (!token) {
+          handleAuthFailure("Session expired. Please login again.");
+          return;
+        }
+
         const batchId = generateJobId();
-        for (const file of files) {
-          fileCacheRef.current.set(file.name.toLowerCase(), file);
-          setToastMessage("submitting");
+        const minDelay =
+          MIN_SCAN_DELAY_MS +
+          Math.random() * (MAX_SCAN_DELAY_MS - MIN_SCAN_DELAY_MS);
+        const start = Date.now();
+        let phaseIndex = 0;
+        setToastMessage(PHASE_MESSAGES[phaseIndex]);
 
-          const { uploadUrl, key, contentType } = await requestDocumentPresign(file);
-          await uploadToS3(file, uploadUrl, contentType);
-          setToastMessage("submitted");
+        const phaseTimer = window.setInterval(() => {
+          phaseIndex = Math.min(phaseIndex + 1, PHASE_MESSAGES.length - 1);
+          setToastMessage(PHASE_MESSAGES[phaseIndex]);
+        }, 900);
 
-          const bucket = resolveBucketFromUploadUrl(uploadUrl) || DOCUMENT_BUCKET_FALLBACK;
-          const analysis = await analyzeDocument(bucket, key);
-          setToastMessage("success");
+        const analyzeSingle = async (file: File) => {
+          const uploadInfo = await getUploadUrl(token);
+          await uploadFile(uploadInfo.upload_url, file);
+          const analysis = await apiAnalyzeDocument(token, DOC_RISK_BUCKET, uploadInfo.key);
 
           const summary = extractSummary(analysis) || "Summary unavailable.";
           const riskScoreRaw =
@@ -873,13 +1007,63 @@ export function useAnalysisSimulation() {
             geolocation: null,
           };
 
+          return docResult;
+        };
+
+        const resultsSettled = await Promise.allSettled(
+          files.map((file) => analyzeSingle(file))
+        );
+
+        const failed = resultsSettled.filter((item) => item.status === "rejected");
+        if (failed.length > 0) {
+          const error = (failed[0] as PromiseRejectedResult).reason as ApiError;
+          if (error && isAuthError(error)) {
+            handleAuthFailure("Session expired. Please login again.");
+            window.clearInterval(phaseTimer);
+            return;
+          }
+          if (error?.status === 403) {
+            const message = error.message || "Upload blocked.";
+            const lower = message.toLowerCase();
+            if (lower.includes("daily token limit")) {
+              setScanDisabled(true);
+              setScanDisabledReason("You have reached today’s scan limit.");
+              toast({ title: "Scan limit reached", description: "You have reached today’s scan limit." });
+            } else if (lower.includes("cooldown") || lower.includes("wait before uploading")) {
+              toast({ title: "Please wait", description: "Please wait a few seconds before scanning again." });
+            } else {
+              toast({ title: "Request blocked", description: message });
+            }
+          } else if (error?.status === 500) {
+            toast({ title: "Upload service unavailable", description: "Upload service temporarily unavailable." });
+          } else {
+            toast({ title: "AI service unavailable", description: error?.message || "AI service temporarily unavailable." });
+          }
+        }
+
+        const newResults = resultsSettled
+          .filter((item): item is PromiseFulfilledResult<AnalysisResult> => item.status === "fulfilled")
+          .map((item) => item.value);
+
+        const elapsed = Date.now() - start;
+        if (elapsed < minDelay) {
+          await sleep(minDelay - elapsed);
+        }
+
+        window.clearInterval(phaseTimer);
+        setToastMessage("Completed");
+        window.setTimeout(() => setToastMessage(null), 1600);
+
+        if (newResults.length > 0) {
           setResults((prev) => {
-            const merged = [docResult, ...prev];
+            const merged = [...newResults.reverse(), ...prev];
             setStats(recomputeStats(merged));
             return merged;
           });
         }
 
+        await refreshStats();
+        await loadHistory();
         return;
       }
 
@@ -1095,5 +1279,18 @@ export function useAnalysisSimulation() {
     });
   }, []);
 
-  return { isAnalyzing, results, stats, toastMessage, runAnalysis, updateDecision };
+  return {
+    isAnalyzing,
+    results,
+    stats,
+    toastMessage,
+    runAnalysis,
+    updateDecision,
+    refreshStats,
+    loadHistory,
+    usageStats,
+    scanDisabled,
+    scanDisabledReason,
+    historyItems,
+  };
 }

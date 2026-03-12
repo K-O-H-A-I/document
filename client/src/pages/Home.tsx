@@ -70,6 +70,12 @@ const toFileResult = (result: AnalysisResult): FileResult => {
   const summary = typeof result.summary === 'string' && result.summary.trim().length > 0
     ? result.summary
     : null;
+  const verdict =
+    result.riskScore >= 70
+      ? 'Suspicious'
+      : result.riskScore <= 30
+        ? 'Authentic Likely'
+        : 'Uncertain';
 
   return {
     id: String(result.id),
@@ -77,7 +83,7 @@ const toFileResult = (result: AnalysisResult): FileResult => {
     sizeLabel: '—',
     isPdf,
     previewUrl: result.previewUrl || null,
-    verdict: result.evidence && result.evidence.length > 0 ? result.evidence[0] : '—',
+    verdict,
     riskScore: result.riskScore,
     decision: result.decision as Decision,
     summary,
@@ -119,6 +125,12 @@ const toRuns = (results: AnalysisResult[]): AnalysisRun[] => {
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 };
 
+const historyBadge = (score: number) => {
+  if (score >= 70) return { label: "High Risk", className: "text-[var(--danger)]" };
+  if (score >= 31) return { label: "Uncertain", className: "text-[var(--grad-orange-start)]" };
+  return { label: "Authentic Likely", className: "text-[var(--ok)]" };
+};
+
 export default function Home() {
   const activeTool: ToolType = 'document';
   const {
@@ -127,6 +139,12 @@ export default function Home() {
     stats,
     toastMessage,
     runAnalysis,
+    refreshStats,
+    loadHistory,
+    usageStats,
+    scanDisabled,
+    scanDisabledReason,
+    historyItems,
   } = useAnalysisSimulation();
 
   const qwenRuns = useMemo(() => toRuns(results.filter((item) => item.toolType === activeTool)), [
@@ -147,6 +165,11 @@ export default function Home() {
   useEffect(() => {
     setLoading({ qwen: isAnalyzing, gpt: false });
   }, [isAnalyzing]);
+
+  useEffect(() => {
+    refreshStats();
+    loadHistory();
+  }, [refreshStats, loadHistory]);
 
   useEffect(() => {
     if (!previewFile) return;
@@ -303,8 +326,18 @@ export default function Home() {
                     <button
                       key={file.id}
                       type="button"
-                      onClick={() => setPreviewFile(file)}
-                      className="w-12 h-12 rounded-lg border border-[var(--border)] bg-[var(--panel2)] flex items-center justify-center overflow-hidden cursor-pointer hover:-translate-y-[1px] hover:shadow-[var(--shadow)] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-2"
+                      onClick={() => {
+                        if (file.previewUrl) {
+                          setPreviewFile(file);
+                        }
+                      }}
+                      disabled={!file.previewUrl}
+                      className={cn(
+                        "w-12 h-12 rounded-lg border border-[var(--border)] bg-[var(--panel2)] flex items-center justify-center overflow-hidden transition-all",
+                        file.previewUrl
+                          ? "cursor-pointer hover:-translate-y-[1px] hover:shadow-[var(--shadow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-2"
+                          : "cursor-not-allowed opacity-70"
+                      )}
                       aria-label={`Preview ${file.name}`}
                     >
                       {file.previewUrl ? (
@@ -516,6 +549,15 @@ export default function Home() {
           className="mb-8"
         >
           <KpiTiles stats={stats} />
+          {usageStats && (
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-[var(--muted)]">
+              <span>
+                Today Usage: {usageStats.tokens_used_today} / {usageStats.token_limit_daily}
+              </span>
+              <span className="hidden sm:inline">•</span>
+              <span>Total Scans: {usageStats.total_scans}</span>
+            </div>
+          )}
         </motion.div>
 
         {/* Main Analysis Card */}
@@ -528,6 +570,8 @@ export default function Home() {
           <MainCard
             onAnalyze={(data) => runAnalysis({ ...data, toolType: activeTool })}
             isAnalyzing={isAnalyzing}
+            isDisabled={scanDisabled}
+            disabledReason={scanDisabledReason}
           />
         </motion.div>
 
@@ -563,6 +607,63 @@ export default function Home() {
             {renderPanel('qwen', 'Qwen', qwenRuns)}
             {renderPanel('gpt', 'GPT', gptRuns)}
           </motion.div>
+        </div>
+
+        {/* Recent History */}
+        <div className="mt-10">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="heading-2">Recent History</h2>
+              <p className="text-sm text-[var(--muted)]">Latest scans from your account.</p>
+            </div>
+          </div>
+
+          {historyItems.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-[var(--border)] rounded-xl bg-[var(--panel2)]">
+              <div className="w-12 h-12 rounded-full bg-[var(--border)] flex items-center justify-center mx-auto mb-3">
+                <Search className="w-6 h-6 text-[var(--muted)]" />
+              </div>
+              <h4 className="text-base font-medium text-[var(--text)] mb-2">No history yet</h4>
+              <p className="text-[var(--muted)] text-sm">Run a scan to populate recent history.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {historyItems.slice(0, 6).map((item, index) => {
+                const score = Math.max(0, Math.min(100, Math.round(item.risk_score)));
+                const badge = historyBadge(score);
+                const timestamp = item.scan_time
+                  ? new Date(item.scan_time)
+                  : new Date();
+                const label = timestamp.toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
+                return (
+                  <div
+                    key={`${item.key}-${index}`}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-[var(--text)]">
+                        {badge.label} — {label}
+                      </div>
+                      <div className="text-xs text-[var(--muted)] mt-1">
+                        {item.summary || "Summary unavailable."}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-[var(--text)]">{score}%</div>
+                      <div className={cn("text-xs font-semibold uppercase", badge.className)}>
+                        {badge.label}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
 

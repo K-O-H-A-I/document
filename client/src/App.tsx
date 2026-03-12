@@ -14,11 +14,31 @@ import "@/styles/tokens.css";
 import "@/styles/ui.css";
 
 function AppRouter() {
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const syncAuth = () => {
+      const token = window.localStorage.getItem("docRiskToken");
+      setIsAuthed(Boolean(token && token.trim()));
+    };
+
+    syncAuth();
+    window.addEventListener("docRisk:auth", syncAuth);
+
+    return () => {
+      window.removeEventListener("docRisk:auth", syncAuth);
+    };
+  }, []);
+
   return (
     <WouterRouter base={import.meta.env.BASE_URL}>
       <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/login" component={Login} />
+        <Route path="/">
+          {isAuthed ? <Home /> : <Login />}
+        </Route>
+        <Route path="/login">
+          {isAuthed ? <Home /> : <Login />}
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </WouterRouter>

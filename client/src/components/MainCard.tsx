@@ -5,24 +5,24 @@ import { cn } from '@/lib/utils';
 interface MainCardProps {
   onAnalyze: (data: { files: File[] }) => void;
   isAnalyzing: boolean;
+  isDisabled?: boolean;
+  disabledReason?: string | null;
 }
 
 type SelectedFile = {
   id: string;
   signature: string;
   file: File;
-  isPdf: boolean;
   sizeLabel: string;
   error?: string;
 };
 
 const MAX_FILES = 3;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-const MAX_PDF_SIZE = 20 * 1024 * 1024;
-const ACCEPTED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png"];
-const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const ACCEPTED_EXTENSIONS = [".jpg", ".jpeg", ".png"];
+const ACCEPTED_TYPES = ["image/jpeg", "image/png"];
 
-export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
+export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }: MainCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const openingPickerRef = useRef(false);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
@@ -45,26 +45,22 @@ export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
   const buildSignature = (file: File) => `${file.name}-${file.size}-${file.lastModified}`;
 
   const mapFile = (file: File) => {
-      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      let error = "";
-      if (!isAcceptedFile(file)) {
-        error = "Only PDF/JPG/JPEG/PNG allowed.";
-      }
-      const maxSize = isPdf ? MAX_PDF_SIZE : MAX_IMAGE_SIZE;
-      if (file.size > maxSize) {
-        const limitLabel = isPdf ? "20MB" : "10MB";
-        error = error
-          ? `${error} File exceeds ${limitLabel}.`
-          : `File exceeds ${limitLabel}.`;
-      }
-      return {
-        id: `${file.name}-${file.lastModified}-${Math.random().toString(16).slice(2)}`,
-        signature: buildSignature(file),
-        file,
-        isPdf,
-        sizeLabel: formatBytes(file.size),
-        error: error || undefined,
-      };
+    let error = "";
+    if (!isAcceptedFile(file)) {
+      error = "Only JPG/JPEG/PNG allowed.";
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      error = error
+        ? `${error} File exceeds 10MB.`
+        : "File exceeds 10MB.";
+    }
+    return {
+      id: `${file.name}-${file.lastModified}-${Math.random().toString(16).slice(2)}`,
+      signature: buildSignature(file),
+      file,
+      sizeLabel: formatBytes(file.size),
+      error: error || undefined,
+    };
   };
 
   const processFiles = (incoming: File[]) => {
@@ -116,7 +112,7 @@ export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
   };
 
   const handleRun = () => {
-    if (hasErrors || selectedFiles.length === 0) return;
+    if (hasErrors || selectedFiles.length === 0 || isDisabled) return;
     const files = selectedFiles.filter((file) => !file.error).map((item) => item.file);
     if (files.length === 0) return;
     onAnalyze({ files });
@@ -155,7 +151,7 @@ export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
             className="hidden" 
             ref={fileInputRef} 
             onChange={handleFileSelect}
-            accept=".pdf,image/jpeg,image/png"
+            accept="image/jpeg,image/png"
             multiple
           />
           <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -178,7 +174,7 @@ export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
         </div>
 
         <div className="text-xs text-[var(--muted)]">
-          Max 3 files • Images ≤ 10MB • PDF ≤ 20MB
+          Max 3 files • JPG/PNG ≤ 10MB
         </div>
 
         {errors.length > 0 && (
@@ -216,18 +212,14 @@ export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
                 )}
               >
                 <div className="w-9 h-9 rounded-lg bg-[var(--panel2)] border border-[var(--border)] flex items-center justify-center shrink-0">
-                  {item.isPdf ? (
-                    <FileText className="w-4 h-4 text-[var(--accent)]" />
-                  ) : (
-                    <ImageIcon className="w-4 h-4 text-[var(--accent)]" />
-                  )}
+                  <ImageIcon className="w-4 h-4 text-[var(--accent)]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-[var(--text)] truncate" title={item.file.name}>
                     {item.file.name}
                   </div>
                   <div className="text-[11px] text-[var(--muted)]">
-                    {item.isPdf ? "PDF" : "Image"} • {item.sizeLabel}
+                    Image • {item.sizeLabel}
                   </div>
                   {item.error && (
                     <div className="text-[11px] text-[var(--danger)] mt-2">
@@ -257,7 +249,7 @@ export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
           <button
             type="button"
             onClick={handleRun}
-            disabled={isAnalyzing || selectedFiles.length === 0 || hasErrors}
+            disabled={isAnalyzing || selectedFiles.length === 0 || hasErrors || !!isDisabled}
             className={cn(
               "min-h-[44px] px-[18px] py-3 text-xs font-bold uppercase tracking-wider rounded-[var(--radius)] border shadow-[var(--shadow)] transition-all",
               "hover:-translate-y-[1px] hover:shadow-[var(--shadow-strong)]",
@@ -269,6 +261,9 @@ export function MainCard({ onAnalyze, isAnalyzing }: MainCardProps) {
             {isAnalyzing ? "Processing" : "Run Verification"}
           </button>
         </div>
+        {isDisabled && disabledReason && (
+          <div className="text-[11px] text-[var(--danger)]">{disabledReason}</div>
+        )}
       </div>
     );
   };

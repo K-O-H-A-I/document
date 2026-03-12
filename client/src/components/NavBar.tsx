@@ -1,33 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { User, X, CreditCard } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { User, X, CreditCard, LogOut } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-
-const getDisplayName = () => {
-  const raw = window.localStorage.getItem('tt_display_email')?.trim() || '';
-  if (!raw.includes('@')) return 'User';
-
-  const prefix = raw.split('@')[0]?.trim() || '';
-  return prefix || 'User';
-};
+import { clearToken } from '@/lib/doc-risk-api';
 
 export function NavBar() {
   const [billingOpen, setBillingOpen] = useState(false);
-  const [userLabel, setUserLabel] = useState('User');
+  const userLabel = 'Analyst';
 
-  useEffect(() => {
-    const syncUserLabel = () => {
-      setUserLabel(getDisplayName());
-    };
-
-    syncUserLabel();
-    window.addEventListener('tt:user-updated', syncUserLabel);
-
-    return () => {
-      window.removeEventListener('tt:user-updated', syncUserLabel);
-    };
-  }, []);
-
-const truncatedUserLabel = useMemo(
+  const truncatedUserLabel = useMemo(
     () => (userLabel.length > 25 ? `${userLabel.slice(0, 25)}…` : userLabel),
     [userLabel]
   );
@@ -59,6 +39,17 @@ const truncatedUserLabel = useMemo(
               <div className="w-9 h-9 rounded-full bg-[var(--panel2)] border border-[var(--border)] flex items-center justify-center">
                 <User className="w-5 h-5 text-[var(--muted)]" />
               </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearToken();
+                window.location.assign(`${import.meta.env.BASE_URL}login`);
+              }}
+              className="btn btn-secondary h-9 px-3 text-xs font-semibold uppercase tracking-wide"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
             </button>
           </div>
         </div>

@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, ShieldCheck, User } from "lucide-react";
+import { login, setToken, isAuthError, type ApiError } from "@/lib/doc-risk-api";
+import { toast } from "@/hooks/use-toast";
 
 type LoginFormProps = {
-  onSuccess?: (email: string) => void;
+  onSuccess?: () => void;
 };
 
 const containerVariants = {
@@ -24,23 +26,22 @@ const itemVariants = {
   },
 };
 
-const normalizeEmail = (value: string) => value.trim().toLowerCase();
-const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(normalizeEmail(value));
+const normalizeInput = (value: string) => value.trim();
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
+  const [usernameFocused, setUsernameFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [capsLockOn, setCapsLockOn] = useState(false);
   const timeoutRef = useRef<number | null>(null);
   const passwordValue = password.trim();
-  const canSubmit = isValidEmail(email) && passwordValue.length > 0 && !isLoading && !isSuccess;
+  const canSubmit = username.trim().length > 0 && passwordValue.length > 0 && !isLoading && !isSuccess;
 
   useEffect(() => {
     return () => {
@@ -48,22 +49,19 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     };
   }, []);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (isLoading || isSuccess) return;
 
-    const nextEmail = normalizeEmail(email);
+    const nextUsername = normalizeInput(username);
     const nextPassword = password.trim();
     let valid = true;
 
-    if (!nextEmail) {
-      setEmailError("Email is required");
-      valid = false;
-    } else if (!isValidEmail(nextEmail)) {
-      setEmailError("Please enter a valid email");
+    if (!nextUsername) {
+      setUsernameError("Username is required");
       valid = false;
     } else {
-      setEmailError("");
+      setUsernameError("");
     }
 
     if (!nextPassword) {
@@ -73,23 +71,39 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       setPasswordError("");
     }
 
-    setEmail(nextEmail);
+    setUsername(nextUsername);
 
     if (valid) {
       setIsLoading(true);
       setIsSuccess(false);
       setCapsLockOn(false);
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-      timeoutRef.current = window.setTimeout(() => {
-        setIsLoading(false);
+      try {
+        const token = await login(nextUsername, nextPassword);
+        setToken(token);
         setIsSuccess(true);
         setPassword("");
         setShowPassword(false);
         timeoutRef.current = window.setTimeout(() => {
           setIsSuccess(false);
-          onSuccess?.(nextEmail);
+          onSuccess?.();
         }, 450);
-      }, 1800);
+      } catch (error) {
+        const err = error as ApiError;
+        const message = err?.message || "Login failed";
+        if (isAuthError(err)) {
+          toast({
+            title: "Session expired",
+            description: "Please login again.",
+          });
+        } else {
+          toast({
+            title: "Login failed",
+            description: message,
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -145,37 +159,37 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <form onSubmit={handleSubmit} noValidate className="space-y-[18px]">
             <div className="space-y-1.5">
               <label className="text-slate-600 font-medium flex items-center gap-2 text-[12px] tracking-[0.01em]">
-                <Mail size={12} className="text-slate-400" />
-                Email address
+                <User size={12} className="text-slate-400" />
+                Username
               </label>
               <div className="relative">
                 <input
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
+                  type="text"
+                  placeholder="docscan_ai_node01"
+                  value={username}
                   onChange={(event) => {
-                    setEmail(event.target.value);
-                    if (emailError) setEmailError("");
+                    setUsername(event.target.value);
+                    if (usernameError) setUsernameError("");
                   }}
                   onPaste={(event) => {
                     const pasted = event.clipboardData.getData("text");
                     if (pasted) {
                       event.preventDefault();
-                      const cleaned = normalizeEmail(pasted);
-                      setEmail(cleaned);
-                      if (emailError) setEmailError("");
+                      const cleaned = normalizeInput(pasted);
+                      setUsername(cleaned);
+                      if (usernameError) setUsernameError("");
                     }
                   }}
-                  onFocus={() => setEmailFocused(true)}
+                  onFocus={() => setUsernameFocused(true)}
                   onBlur={() => {
-                    setEmailFocused(false);
-                    setEmail((current) => normalizeEmail(current));
+                    setUsernameFocused(false);
+                    setUsername((current) => normalizeInput(current));
                   }}
                   autoComplete="username"
                   spellCheck={false}
                   className={[
                     "w-full px-4 py-[11px] rounded-xl bg-slate-50/80 text-[14px] text-slate-700 placeholder:text-slate-300 border transition-[border-color,box-shadow,background-color] duration-300 outline-none focus-visible:outline-none",
-                    emailError
+                    usernameError
                       ? "border-red-300 ring-[2px] ring-red-400/10"
                       : "border-slate-200/90 hover:border-slate-300 focus:border-[#4fd1c5]/40 focus:ring-[1px] focus:ring-[#4fd1c5]/25 focus:bg-white focus:shadow-[0_6px_14px_rgba(15,118,110,0.06)]",
                   ].join(" ")}
@@ -183,18 +197,18 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 <motion.div
                   className="absolute left-4 right-4 bottom-0 h-[1px] rounded-full bg-[#4fd1c5]"
                   initial={false}
-                  animate={{ scaleX: emailFocused ? 1 : 0 }}
+                  animate={{ scaleX: usernameFocused ? 1 : 0 }}
                   transition={{ duration: 0.22, ease: "easeInOut" }}
                   style={{ transformOrigin: "50% 50%" }}
                 />
               </div>
-              {emailError && (
+              {usernameError && (
                 <motion.p
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-red-500 text-[11px] font-medium"
                 >
-                  {emailError}
+                  {usernameError}
                 </motion.p>
               )}
             </div>

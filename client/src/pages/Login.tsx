@@ -8,9 +8,7 @@ import LoginForm from "@/components/LoginForm";
 export default function Login() {
   const [, setLocation] = useLocation();
 
-  const handleSuccess = (email: string) => {
-    window.localStorage.setItem("tt_display_email", email);
-    window.dispatchEvent(new Event("tt:user-updated"));
+  const handleSuccess = () => {
     setLocation("/");
   };
 

@@ -557,7 +557,7 @@ export default function Home() {
   ) : null;
 
   return (
-    <div className="min-h-screen pb-20 font-sans selection:bg-[var(--accent)] selection:text-white app-shell">
+    <div className="min-h-screen pb-20 font-sans app-shell">
       <NavBar />
 
       <main className="max-w-[1280px] mx-auto px-6 pt-8 relative z-10">

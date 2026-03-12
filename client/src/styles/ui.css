@@ -231,6 +231,16 @@
     radial-gradient(700px 320px at 50% 60%, color-mix(in srgb, var(--accent-4) 12%, transparent), transparent 75%);
 }
 
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
+}
+
+::-moz-selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
+}
+
 .section-glow {
   position: relative;
 }

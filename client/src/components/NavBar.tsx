@@ -1,10 +1,35 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { User, X, CreditCard } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+const getDisplayName = () => {
+  const raw = window.localStorage.getItem('tt_display_email')?.trim() || '';
+  if (!raw.includes('@')) return 'User';
+
+  const prefix = raw.split('@')[0]?.trim() || '';
+  return prefix || 'User';
+};
+
 export function NavBar() {
   const [billingOpen, setBillingOpen] = useState(false);
-  const userLabel = 'User';
+  const [userLabel, setUserLabel] = useState('User');
+
+  useEffect(() => {
+    const syncUserLabel = () => {
+      setUserLabel(getDisplayName());
+    };
+
+    syncUserLabel();
+    window.addEventListener('tt:user-updated', syncUserLabel);
+
+    return () => {
+      window.removeEventListener('tt:user-updated', syncUserLabel);
+    };
+  }, []);
+
+  const truncatedUserLabel = useMemo(() => {
+    return userLabel.length > 12 ? `${userLabel.slice(0, 12)}…` : userLabel;
+  }, [userLabel]);
 
   return (
     <>
@@ -27,7 +52,7 @@ export function NavBar() {
             >
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-[var(--text)] truncate max-w-[160px]" title={userLabel}>
-                  {userLabel}
+                  {truncatedUserLabel}
                 </p>
               </div>
               <div className="w-9 h-9 rounded-full bg-[var(--panel2)] border border-[var(--border)] flex items-center justify-center">

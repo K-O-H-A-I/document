@@ -24,6 +24,9 @@ const itemVariants = {
   },
 };
 
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(normalizeEmail(value));
+
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +39,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [passwordError, setPasswordError] = useState("");
   const [capsLockOn, setCapsLockOn] = useState(false);
   const timeoutRef = useRef<number | null>(null);
+  const passwordValue = password.trim();
+  const canSubmit = isValidEmail(email) && passwordValue.length > 0 && !isLoading && !isSuccess;
 
   useEffect(() => {
     return () => {
@@ -45,35 +50,44 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (isLoading || isSuccess) return;
+
+    const nextEmail = normalizeEmail(email);
+    const nextPassword = password.trim();
     let valid = true;
 
-    if (!email) {
+    if (!nextEmail) {
       setEmailError("Email is required");
       valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } else if (!isValidEmail(nextEmail)) {
       setEmailError("Please enter a valid email");
       valid = false;
     } else {
       setEmailError("");
     }
 
-    if (!password) {
+    if (!nextPassword) {
       setPasswordError("Password is required");
       valid = false;
     } else {
       setPasswordError("");
     }
 
+    setEmail(nextEmail);
+
     if (valid) {
       setIsLoading(true);
       setIsSuccess(false);
+      setCapsLockOn(false);
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => {
         setIsLoading(false);
         setIsSuccess(true);
+        setPassword("");
+        setShowPassword(false);
         timeoutRef.current = window.setTimeout(() => {
           setIsSuccess(false);
-          onSuccess?.(email);
+          onSuccess?.(nextEmail);
         }, 450);
       }, 1800);
     }
@@ -128,7 +142,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-[18px]">
+          <form onSubmit={handleSubmit} noValidate className="space-y-[18px]">
             <div className="space-y-1.5">
               <label className="text-slate-600 font-medium flex items-center gap-2 text-[12px] tracking-[0.01em]">
                 <Mail size={12} className="text-slate-400" />
@@ -143,8 +157,22 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                     setEmail(event.target.value);
                     if (emailError) setEmailError("");
                   }}
+                  onPaste={(event) => {
+                    const pasted = event.clipboardData.getData("text");
+                    if (pasted) {
+                      event.preventDefault();
+                      const cleaned = normalizeEmail(pasted);
+                      setEmail(cleaned);
+                      if (emailError) setEmailError("");
+                    }
+                  }}
                   onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
+                  onBlur={() => {
+                    setEmailFocused(false);
+                    setEmail((current) => normalizeEmail(current));
+                  }}
+                  autoComplete="username"
+                  spellCheck={false}
                   className={[
                     "w-full px-4 py-[11px] rounded-xl bg-slate-50/80 text-[14px] text-slate-700 placeholder:text-slate-300 border transition-[border-color,box-shadow,background-color] duration-300 outline-none focus-visible:outline-none",
                     emailError
@@ -180,6 +208,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 <button
                   type="button"
                   className="text-[#4fd1c5] hover:text-[#38b2ac] font-medium hover:underline text-[11px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4fd1c5]/60 focus-visible:outline-offset-2 rounded"
+                  title="Password recovery will be enabled when backend auth is connected."
+                  aria-label="Password recovery will be enabled when backend auth is connected."
                 >
                   Forgot?
                 </button>
@@ -197,6 +227,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   onKeyDown={handlePasswordKey}
                   onFocus={handlePasswordFocus}
                   onBlur={handlePasswordBlur}
+                  autoComplete="current-password"
                   className={[
                     "w-full px-4 py-[11px] pr-11 rounded-xl bg-slate-50/80 text-[14px] text-slate-700 placeholder:text-slate-300 border transition-[border-color,box-shadow,background-color] duration-300 outline-none focus-visible:outline-none",
                     passwordError
@@ -269,7 +300,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               type="submit"
               whileHover={{ scale: 1.01, y: -1 }}
               whileTap={{ scale: 0.98 }}
-              disabled={isLoading || isSuccess}
+              disabled={!canSubmit}
               className="group relative w-full min-h-[44px] py-3 rounded-xl text-white font-medium text-[14px] tracking-[0.01em] overflow-hidden disabled:opacity-100 disabled:cursor-not-allowed active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4fd1c5]/70 focus-visible:outline-offset-2"
               style={{
                 background: "linear-gradient(135deg, #2d8a80 0%, #38b2ac 52%, #4fd1c5 100%)",

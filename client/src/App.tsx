@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Router as WouterRouter, Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -25,9 +26,24 @@ function AppRouter() {
 }
 
 function App() {
+  const [isEmbedded, setIsEmbedded] = useState(false);
+
+  useEffect(() => {
+    try {
+      setIsEmbedded(window.top !== window.self);
+    } catch {
+      setIsEmbedded(true);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        {isEmbedded && (
+          <div className="sticky top-0 z-[200] border-b border-[var(--border)] bg-[var(--panel)]/95 px-4 py-2 text-center text-xs text-[var(--muted)] backdrop-blur-md">
+            This app is not intended to run inside an embedded frame.
+          </div>
+        )}
         <AppRouter />
         <Toaster />
       </TooltipProvider>

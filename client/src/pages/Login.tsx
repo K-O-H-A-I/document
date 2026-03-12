@@ -8,8 +8,7 @@ import LoginForm from "@/components/LoginForm";
 export default function Login() {
   const [, setLocation] = useLocation();
 
-  const handleSuccess = (email: string) => {
-    window.localStorage.setItem("tt_user_email", email);
+  const handleSuccess = () => {
     setLocation("/");
   };
 

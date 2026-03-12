@@ -1,15 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { User, X, CreditCard } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export function NavBar() {
   const [billingOpen, setBillingOpen] = useState(false);
-  const [userLabel, setUserLabel] = useState('User');
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem('tt_user_email');
-    if (stored) setUserLabel(stored);
-  }, []);
+  const userLabel = 'User';
 
   return (
     <>

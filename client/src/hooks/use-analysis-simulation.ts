@@ -839,7 +839,6 @@ export function useAnalysisSimulation() {
 
         const bucket = resolveBucketFromUploadUrl(uploadUrl) || DOCUMENT_BUCKET_FALLBACK;
         const analysis = await analyzeDocument(bucket, key);
-        console.log("Document analysis response:", analysis);
         setToastMessage("success");
 
         const normalizedName = normalizeFilename(file.name);
@@ -1094,9 +1093,9 @@ export function useAnalysisSimulation() {
         setStats(recomputeStats(merged));
         return merged;
       });
-    } catch (error: any) {
+    } catch (_error: any) {
       setToastMessage("failed");
-      console.error(error);
+      console.error("Analysis request failed");
     } finally {
       setIsAnalyzing(false);
     }

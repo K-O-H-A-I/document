@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Router as WouterRouter, Switch, Route, useLocation } from "wouter";
+import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,7 +19,6 @@ function AppRouter() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [location, setLocation] = useLocation();
   const basePath = getBasePath();
-  const routerBase = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
 
   useEffect(() => {
     const syncAuth = () => {
@@ -44,7 +44,7 @@ function AppRouter() {
   }, [isAuthed, location, setLocation]);
 
   return (
-    <WouterRouter base={routerBase}>
+    <WouterRouter hook={useHashLocation} base={basePath}>
       <Switch>
         <Route path="/">{isAuthed ? <Home /> : <Login />}</Route>
         <Route path="/login">
@@ -74,9 +74,6 @@ function App() {
       const basePath = getBasePath();
       const newUrl = `${basePath}${target}${window.location.hash || ""}`;
       window.history.replaceState(null, "", newUrl);
-    }
-    if (!import.meta.env.DEV && window.location.pathname === "/login") {
-      window.location.replace("/document/login");
     }
   }, []);
 

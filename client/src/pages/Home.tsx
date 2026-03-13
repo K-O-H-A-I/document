@@ -250,7 +250,6 @@ export default function Home() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-[var(--text)]">{title}</h3>
-            <p className="text-xs text-[var(--muted)]">Independent model output</p>
           </div>
           <div className="text-xs text-[var(--muted)]">
             {runs.length} run{runs.length === 1 ? '' : 's'}
@@ -589,7 +588,7 @@ export default function Home() {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="heading-2">Recent Analysis</h2>
-              <p className="text-sm text-[var(--muted)]">Qwen shows real results, GPT will be enabled later.</p>
+              <p className="text-sm text-[var(--muted)]">Document analysis results.</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -611,10 +610,9 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            className="grid grid-cols-1 gap-6"
           >
-            {renderPanel('qwen', 'Qwen', qwenRuns)}
-            {renderPanel('gpt', 'GPT', gptRuns)}
+            {renderPanel('qwen', 'Recent Analysis', qwenRuns)}
           </motion.div>
         </div>
 

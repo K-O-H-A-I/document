@@ -294,7 +294,12 @@ export default function Home() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-[11px] text-[var(--muted)]">
-                      Run: {formatRunTime(run.createdAt)} • Files processed: {run.files.length}
+                      Run: {formatRunTime(run.createdAt)}
+                    </div>
+                    <div className="text-[11px] text-[var(--muted)] mt-1">
+                      Files: {(Array.isArray(run.files) ? run.files : [])
+                        .map((file) => file.name)
+                        .join(", ")}
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <span
@@ -430,7 +435,7 @@ export default function Home() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 10 }}
           transition={{ duration: 0.2 }}
-          className="w-full max-w-[min(1100px,92vw)] max-h-[88vh] bg-[var(--panel)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow-strong)] flex flex-col overflow-hidden"
+          className="w-[min(96vw,1400px)] h-[92vh] bg-[var(--panel)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow-strong)] flex flex-col overflow-hidden"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-4 p-4 border-b border-[var(--border)]">
@@ -501,7 +506,7 @@ export default function Home() {
                   <img
                     src={previewFile.previewUrl}
                     alt={previewFile.name}
-                    className="max-w-full max-h-[calc(88vh-110px)] object-contain transition-transform"
+                    className="max-w-full max-h-full object-contain transition-transform"
                     style={{ transform: `scale(${previewZoom})` }}
                   />
                 </div>

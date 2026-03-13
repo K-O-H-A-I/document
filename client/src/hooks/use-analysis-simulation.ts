@@ -929,10 +929,6 @@ export function useAnalysisSimulation() {
     try {
       const history = await fetchHistory(token);
       setHistoryItems(history);
-      const mapped = mapHistoryToResults(history);
-      setResults(mapped);
-      setStats(recomputeStats(mapped));
-      nextIdRef.current = mapped.reduce((max, item) => Math.max(max, item.id), 0) + 1;
     } catch (error) {
       const err = error as ApiError;
       if (err && isAuthError(err)) {

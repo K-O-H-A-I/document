@@ -224,14 +224,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   <Lock size={12} className="text-slate-400" />
                   Password
                 </label>
-                <button
-                  type="button"
-                  className="text-[#4fd1c5] hover:text-[#38b2ac] font-medium hover:underline text-[11px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4fd1c5]/60 focus-visible:outline-offset-2 rounded"
-                  title="Password recovery will be enabled when backend auth is connected."
-                  aria-label="Password recovery will be enabled when backend auth is connected."
-                >
-                  Forgot?
-                </button>
+                <span className="text-[11px] text-slate-400">Secure access only</span>
               </div>
               <div className="relative">
                 <input

@@ -357,7 +357,7 @@ const fetchJob = async (
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const redirectToLogin = () => {
-  window.location.assign(`${getBasePath()}login`);
+  window.location.assign(`${getBasePath()}#/login`);
 };
 
 const handleAuthFailure = (message?: string) => {

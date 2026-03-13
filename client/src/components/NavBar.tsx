@@ -45,7 +45,7 @@ export function NavBar() {
               type="button"
               onClick={() => {
                 clearToken();
-                window.location.assign(`${getBasePath()}login`);
+                window.location.assign(`${getBasePath()}#/login`);
               }}
               className="btn btn-secondary h-9 px-3 text-xs font-semibold uppercase tracking-wide"
             >

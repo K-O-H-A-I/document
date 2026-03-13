@@ -10,9 +10,11 @@
         var path = window.location.pathname || "/";
         var search = window.location.search || "";
         var hash = window.location.hash || "";
-        if (path.indexOf(base) === 0) {
-          path = path.slice(base.length - 1);
+        if (path.indexOf(base) !== 0) {
+          window.location.replace(base);
+          return;
         }
+        path = path.slice(base.length - 1);
         var redirect = base + (path === "/" ? "" : "?/" + path.slice(1)) + search + hash;
         window.location.replace(redirect);
       })();

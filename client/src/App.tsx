@@ -75,6 +75,9 @@ function App() {
       const newUrl = `${basePath}${target}${window.location.hash || ""}`;
       window.history.replaceState(null, "", newUrl);
     }
+    if (!import.meta.env.DEV && window.location.pathname === "/login") {
+      window.location.replace("/document/login");
+    }
   }, []);
 
   return (

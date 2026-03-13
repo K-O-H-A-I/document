@@ -128,11 +128,18 @@ export const fetchStats = async (token: string) => {
 };
 
 export const fetchHistory = async (token: string) => {
-  const data = await postJson<HistoryItem[] | Record<string, unknown>>(
+  const data = await postJson<HistoryItem[] | { items?: HistoryItem[] } | Record<string, unknown>>(
     "/history",
     {},
     token
   );
+  if (Array.isArray(data)) {
+    return data;
+  }
+  const items = (data as { items?: HistoryItem[] }).items;
+  if (Array.isArray(items)) {
+    return items;
+  }
   if (!Array.isArray(data)) {
     throw { status: 500, message: "Invalid history response" } as ApiError;
   }

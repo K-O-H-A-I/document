@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
+import { getBasePath } from "@/lib/base-path";
 
 // Import styles
 import "@/styles/fonts.css";
@@ -16,6 +17,7 @@ import "@/styles/ui.css";
 function AppRouter() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [location, setLocation] = useLocation();
+  const basePath = getBasePath();
 
   useEffect(() => {
     const syncAuth = () => {
@@ -41,7 +43,7 @@ function AppRouter() {
   }, [isAuthed, location, setLocation]);
 
   return (
-    <WouterRouter base={import.meta.env.BASE_URL}>
+    <WouterRouter base={basePath}>
       <Switch>
         <Route path="/">{isAuthed ? <Home /> : <Login />}</Route>
         <Route path="/login">
@@ -68,7 +70,8 @@ function App() {
     const search = window.location.search || "";
     if (search.startsWith("?/")) {
       const target = search.slice(2);
-      const newUrl = `${import.meta.env.BASE_URL}${target}${window.location.hash || ""}`;
+      const basePath = getBasePath();
+      const newUrl = `${basePath}${target}${window.location.hash || ""}`;
       window.history.replaceState(null, "", newUrl);
     }
   }, []);

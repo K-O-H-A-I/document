@@ -14,6 +14,7 @@ import {
   type StatsResponse,
 } from '@/lib/doc-risk-api';
 import { toast } from '@/hooks/use-toast';
+import { getBasePath } from '@/lib/base-path';
 
 type AnalysisRequest = {
   files: File[];
@@ -356,7 +357,7 @@ const fetchJob = async (
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const redirectToLogin = () => {
-  window.location.assign(`${import.meta.env.BASE_URL}login`);
+  window.location.assign(`${getBasePath()}login`);
 };
 
 const handleAuthFailure = (message?: string) => {

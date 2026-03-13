@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { User, X, CreditCard, LogOut } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clearToken } from '@/lib/doc-risk-api';
+import { getBasePath } from '@/lib/base-path';
 
 export function NavBar() {
   const [billingOpen, setBillingOpen] = useState(false);
@@ -44,7 +45,7 @@ export function NavBar() {
               type="button"
               onClick={() => {
                 clearToken();
-                window.location.assign(`${import.meta.env.BASE_URL}login`);
+                window.location.assign(`${getBasePath()}login`);
               }}
               className="btn btn-secondary h-9 px-3 text-xs font-semibold uppercase tracking-wide"
             >

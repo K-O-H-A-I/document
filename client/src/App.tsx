@@ -14,7 +14,7 @@ import "@/styles/fonts.css";
 import "@/styles/tokens.css";
 import "@/styles/ui.css";
 
-function AppRouter() {
+function AuthRoutes() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [location, setLocation] = useLocation();
 
@@ -42,14 +42,20 @@ function AppRouter() {
   }, [isAuthed, location, setLocation]);
 
   return (
+    <Switch>
+      <Route path="/">{isAuthed ? <Home /> : <Login />}</Route>
+      <Route path="/login">
+        {isAuthed ? <Home /> : <Login />}
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function AppRouter() {
+  return (
     <WouterRouter hook={useHashLocation}>
-      <Switch>
-        <Route path="/">{isAuthed ? <Home /> : <Login />}</Route>
-        <Route path="/login">
-          {isAuthed ? <Home /> : <Login />}
-        </Route>
-        <Route component={NotFound} />
-      </Switch>
+      <AuthRoutes />
     </WouterRouter>
   );
 }

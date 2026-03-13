@@ -64,6 +64,15 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const search = window.location.search || "";
+    if (search.startsWith("?/")) {
+      const target = search.slice(2);
+      const newUrl = `${import.meta.env.BASE_URL}${target}${window.location.hash || ""}`;
+      window.history.replaceState(null, "", newUrl);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

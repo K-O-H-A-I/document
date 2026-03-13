@@ -147,10 +147,11 @@ export default function Home() {
     historyItems,
   } = useAnalysisSimulation();
 
-  const qwenRuns = useMemo(() => toRuns(results.filter((item) => item.toolType === activeTool)), [
-    results,
-    activeTool,
-  ]);
+  const safeResults = Array.isArray(results) ? results : [];
+  const qwenRuns = useMemo(
+    () => toRuns(safeResults.filter((item) => item.toolType === activeTool)),
+    [safeResults, activeTool]
+  );
   const gptRuns: AnalysisRun[] = [];
   const safeHistoryItems = Array.isArray(historyItems) ? historyItems : [];
 

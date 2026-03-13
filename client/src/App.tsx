@@ -18,6 +18,7 @@ function AppRouter() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [location, setLocation] = useLocation();
   const basePath = getBasePath();
+  const routerBase = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
 
   useEffect(() => {
     const syncAuth = () => {
@@ -43,7 +44,7 @@ function AppRouter() {
   }, [isAuthed, location, setLocation]);
 
   return (
-    <WouterRouter base={basePath}>
+    <WouterRouter base={routerBase}>
       <Switch>
         <Route path="/">{isAuthed ? <Home /> : <Login />}</Route>
         <Route path="/login">

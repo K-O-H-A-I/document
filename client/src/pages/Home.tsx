@@ -152,6 +152,7 @@ export default function Home() {
     activeTool,
   ]);
   const gptRuns: AnalysisRun[] = [];
+  const safeHistoryItems = Array.isArray(historyItems) ? historyItems : [];
 
   const [loading, setLoading] = useState({ qwen: false, gpt: false });
   const [expandedRuns, setExpandedRuns] = useState<{ qwen: Record<string, boolean>; gpt: Record<string, boolean> }>({
@@ -322,7 +323,7 @@ export default function Home() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-2">
-                  {run.files.slice(0, 3).map((file) => (
+                  {(Array.isArray(run.files) ? run.files : []).slice(0, 3).map((file) => (
                     <button
                       key={file.id}
                       type="button"
@@ -351,13 +352,15 @@ export default function Home() {
                       )}
                     </button>
                   ))}
-                  {run.files.length > 3 && (
-                    <div className="text-xs text-[var(--muted)]">+{run.files.length - 3}</div>
+                  {(Array.isArray(run.files) ? run.files : []).length > 3 && (
+                    <div className="text-xs text-[var(--muted)]">
+                      +{(Array.isArray(run.files) ? run.files : []).length - 3}
+                    </div>
                   )}
                 </div>
 
                 <div className="mt-3 space-y-1 text-xs text-[var(--muted)]">
-                  {run.files.map((file) => (
+                  {(Array.isArray(run.files) ? run.files : []).map((file) => (
                     <div key={`${file.id}-name`} className="truncate" title={file.name}>
                       {file.name}
                     </div>
@@ -374,7 +377,7 @@ export default function Home() {
                       className="overflow-hidden"
                     >
                       <div className="mt-4 grid gap-3">
-                        {run.files.map((file) => (
+                        {(Array.isArray(run.files) ? run.files : []).map((file) => (
                           <div
                             key={`${file.id}-detail`}
                             className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/60 p-4"
@@ -618,7 +621,7 @@ export default function Home() {
             </div>
           </div>
 
-          {historyItems.length === 0 ? (
+          {safeHistoryItems.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-[var(--border)] rounded-xl bg-[var(--panel2)]">
               <div className="w-12 h-12 rounded-full bg-[var(--border)] flex items-center justify-center mx-auto mb-3">
                 <Search className="w-6 h-6 text-[var(--muted)]" />
@@ -628,7 +631,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-3">
-              {historyItems.slice(0, 6).map((item, index) => {
+              {safeHistoryItems.slice(0, 6).map((item, index) => {
                 const score = Math.max(0, Math.min(100, Math.round(item.risk_score)));
                 const badge = historyBadge(score);
                 const timestamp = item.scan_time

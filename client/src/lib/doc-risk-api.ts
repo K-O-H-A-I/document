@@ -101,8 +101,16 @@ export const login = async (username: string, password: string) => {
   return data.token;
 };
 
-export const getUploadUrl = async (token: string) => {
-  return postJson<UploadUrlResponse>("/get-upload-url", {}, token);
+const extFromFile = (file: File) => {
+  const name = file.name || "";
+  const idx = name.lastIndexOf(".");
+  if (idx === -1) return "";
+  return name.slice(idx + 1).toLowerCase();
+};
+
+export const getUploadUrl = async (token: string, file: File) => {
+  const ext = extFromFile(file) || "png";
+  return postJson<UploadUrlResponse>("/get-upload-url", { ext }, token);
 };
 
 export const uploadFile = async (uploadUrl: string, file: File) => {

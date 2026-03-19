@@ -970,7 +970,7 @@ export function useAnalysisSimulation() {
         }, 900);
 
         const analyzeSingle = async (file: File) => {
-          const uploadInfo = await getUploadUrl(token);
+          const uploadInfo = await getUploadUrl(token, file);
           await uploadFile(uploadInfo.upload_url, file);
           const analysis = await apiAnalyzeDocument(token, DOC_RISK_BUCKET, uploadInfo.key);
 

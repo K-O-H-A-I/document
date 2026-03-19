@@ -145,6 +145,7 @@ export default function Home() {
     scanDisabled,
     scanDisabledReason,
     historyItems,
+    clearHistory,
   } = useAnalysisSimulation();
 
   const safeResults = Array.isArray(results) ? results : [];
@@ -346,7 +347,12 @@ export default function Home() {
                       )}
                       aria-label={`Preview ${file.name}`}
                     >
-                      {file.previewUrl ? (
+                      {file.isPdf ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[9px] font-semibold text-[var(--muted)]">
+                          <FileText className="w-4 h-4 text-[var(--accent)]" />
+                          PDF
+                        </div>
+                      ) : file.previewUrl ? (
                         <img
                           src={file.previewUrl}
                           alt={file.name}
@@ -558,12 +564,8 @@ export default function Home() {
         >
           <KpiTiles stats={stats} />
           {usageStats && (
-            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-[var(--muted)]">
-              <span>
-                Today Usage: {usageStats.tokens_used_today} / {usageStats.token_limit_daily}
-              </span>
-              <span className="hidden sm:inline">•</span>
-              <span>Total Scans: {usageStats.total_scans}</span>
+            <div className="mt-4 text-xs text-[var(--muted)]">
+              Total Scans: {usageStats.total_scans}
             </div>
           )}
         </motion.div>
@@ -623,6 +625,13 @@ export default function Home() {
               <h2 className="heading-2">Recent History</h2>
               <p className="text-sm text-[var(--muted)]">Latest scans from your account.</p>
             </div>
+            <button
+              type="button"
+              onClick={clearHistory}
+              className="btn btn-secondary h-9 px-3 text-xs font-semibold uppercase tracking-wide"
+            >
+              Clear history
+            </button>
           </div>
 
           {safeHistoryItems.length === 0 ? (

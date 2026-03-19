@@ -942,6 +942,10 @@ export function useAnalysisSimulation() {
     }
   }, []);
 
+  const clearHistory = useCallback(() => {
+    setHistoryItems([]);
+  }, []);
+
   const runAnalysis = useCallback(async ({ files, toolType, imageModels }: AnalysisRequest) => {
     if (!files || files.length === 0) return;
 
@@ -1289,5 +1293,6 @@ export function useAnalysisSimulation() {
     scanDisabled,
     scanDisabledReason,
     historyItems,
+    clearHistory,
   };
 }

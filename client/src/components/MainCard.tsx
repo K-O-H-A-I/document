@@ -19,8 +19,9 @@ type SelectedFile = {
 
 const MAX_FILES = 3;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-const ACCEPTED_EXTENSIONS = [".jpg", ".jpeg", ".png"];
-const ACCEPTED_TYPES = ["image/jpeg", "image/png"];
+const MAX_PDF_SIZE = 20 * 1024 * 1024;
+const ACCEPTED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png"];
+const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 
 export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }: MainCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,14 +46,17 @@ export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }:
   const buildSignature = (file: File) => `${file.name}-${file.size}-${file.lastModified}`;
 
   const mapFile = (file: File) => {
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
     let error = "";
     if (!isAcceptedFile(file)) {
-      error = "Only JPG/JPEG/PNG allowed.";
+      error = "Only PDF/JPG/JPEG/PNG allowed.";
     }
-    if (file.size > MAX_IMAGE_SIZE) {
+    const maxSize = isPdf ? MAX_PDF_SIZE : MAX_IMAGE_SIZE;
+    if (file.size > maxSize) {
+      const limitLabel = isPdf ? "20MB" : "10MB";
       error = error
-        ? `${error} File exceeds 10MB.`
-        : "File exceeds 10MB.";
+        ? `${error} File exceeds ${limitLabel}.`
+        : `File exceeds ${limitLabel}.`;
     }
     return {
       id: `${file.name}-${file.lastModified}-${Math.random().toString(16).slice(2)}`,
@@ -151,7 +155,7 @@ export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }:
             className="hidden" 
             ref={fileInputRef} 
             onChange={handleFileSelect}
-            accept="image/jpeg,image/png"
+            accept=".pdf,image/jpeg,image/png"
             multiple
           />
           <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -174,7 +178,7 @@ export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }:
         </div>
 
         <div className="text-xs text-[var(--muted)]">
-          Max 3 files • JPG/PNG ≤ 10MB
+          Max 3 files • Images ≤ 10MB • PDF ≤ 20MB
         </div>
 
         {errors.length > 0 && (

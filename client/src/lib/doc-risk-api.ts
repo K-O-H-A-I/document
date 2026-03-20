@@ -9,6 +9,11 @@ type ApiError = {
 type UploadUrlResponse = {
   upload_url: string;
   key: string;
+  contentType?: string;
+};
+
+type UploadBatchResponse = {
+  items: UploadUrlResponse[];
 };
 
 type AnalyzeResponse = {
@@ -149,6 +154,19 @@ const extFromFile = (file: File) => {
 export const getUploadUrl = async (token: string, file: File) => {
   const ext = extFromFile(file) || "png";
   return postJson<UploadUrlResponse>("/get-upload-url", { ext }, token);
+};
+
+export const getUploadUrlsBatch = async (token: string, files: File[]) => {
+  const payload = {
+    files: files.map((file) => {
+      const ext = extFromFile(file) || "png";
+      return {
+        ext,
+        contentType: file.type || undefined,
+      };
+    }),
+  };
+  return postJson<UploadBatchResponse>("/get-upload-url", payload, token);
 };
 
 export const uploadFile = async (uploadUrl: string, file: File) => {

@@ -7,6 +7,7 @@ import {
   fetchStats,
   getToken,
   getUploadUrl,
+  getUploadUrlsBatch,
   uploadFile,
   clearToken,
   isAuthError,
@@ -1010,6 +1011,10 @@ export function useAnalysisSimulation() {
             }
             return;
           }
+          if (error?.status === 429) {
+            toast({ title: "Please wait", description: "Please wait a few seconds before scanning again." });
+            return;
+          }
           if (error?.status === 500) {
             toast({ title: "Upload service unavailable", description: "Upload service temporarily unavailable." });
             return;
@@ -1018,13 +1023,32 @@ export function useAnalysisSimulation() {
         };
 
         try {
-          const uploads = await Promise.all(
-            files.map(async (file) => {
-              const uploadInfo = await getUploadUrl(token, file);
-              await uploadFile(uploadInfo.upload_url, file);
-              return { file, key: uploadInfo.key };
-            })
-          );
+          let uploads: Array<{ file: File; key: string }> = [];
+          if (files.length > 1) {
+            const batchUpload = await getUploadUrlsBatch(token, files);
+            const items = Array.isArray(batchUpload.items) ? batchUpload.items : [];
+            if (items.length !== files.length) {
+              throw {
+                status: 500,
+                message: "Upload service returned an unexpected response.",
+              } as ApiError;
+            }
+            uploads = await Promise.all(
+              items.map(async (item, idx) => {
+                const file = files[idx];
+                await uploadFile(item.upload_url, file);
+                return { file, key: item.key };
+              })
+            );
+          } else {
+            uploads = await Promise.all(
+              files.map(async (file) => {
+                const uploadInfo = await getUploadUrl(token, file);
+                await uploadFile(uploadInfo.upload_url, file);
+                return { file, key: uploadInfo.key };
+              })
+            );
+          }
 
           const keyToFile = new Map(uploads.map((item) => [item.key, item.file]));
           const now = Date.now();

@@ -18,6 +18,12 @@ export const analysisResults = pgTable("analysis_results", {
   timestamp: timestamp("timestamp").defaultNow(),
   previewUrl: text("preview_url"),
   previewUrls: jsonb("preview_urls").$type<string[]>(),
+  identity: jsonb("identity").$type<{
+    name?: string;
+    dob?: string;
+    address?: string;
+    confidence?: number;
+  }>(),
   metadata: jsonb("metadata").$type<{
     decision: string;
     evidence: string[];

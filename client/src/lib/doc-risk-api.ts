@@ -16,6 +16,26 @@ type AnalyzeResponse = {
   summary?: string;
 };
 
+type BatchAnalyzeResponse = {
+  files: Array<{
+    key: string;
+    risk_score: number;
+    identity?: {
+      name?: string;
+      dob?: string;
+      address?: string;
+      confidence?: number;
+    };
+  }>;
+  identity_similarity?: number;
+  overall_batch_risk?: number;
+  correlation?: {
+    conclusion?: string;
+    confidence?: number;
+    story?: string;
+  };
+};
+
 type StatsResponse = {
   tokens_used_today: number;
   token_limit_daily: number;
@@ -24,9 +44,27 @@ type StatsResponse = {
 
 type HistoryItem = {
   scan_time: string;
-  risk_score: number;
+  risk_score?: number;
   summary?: string;
-  key: string;
+  key?: string;
+  job_type?: string;
+  files?: Array<{
+    key: string;
+    risk_score: number;
+    identity?: {
+      name?: string;
+      dob?: string;
+      address?: string;
+      confidence?: number;
+    };
+  }>;
+  identity_similarity?: number;
+  overall_risk?: number;
+  correlation?: {
+    conclusion?: string;
+    confidence?: number;
+    story?: string;
+  };
 };
 
 const authHeader = (token: string | null) =>
@@ -131,6 +169,10 @@ export const analyzeDocument = async (token: string, bucket: string, key: string
   return postJson<AnalyzeResponse>("/analyze", { bucket, key }, token);
 };
 
+export const analyzeBatch = async (token: string, files: Array<{ key: string }>) => {
+  return postJson<BatchAnalyzeResponse>("/batch-analyze", { files }, token);
+};
+
 export const fetchStats = async (token: string) => {
   return postJson<StatsResponse>("/stats", {}, token);
 };
@@ -154,4 +196,4 @@ export const fetchHistory = async (token: string) => {
   return data;
 };
 
-export type { ApiError, StatsResponse, HistoryItem, AnalyzeResponse };
+export type { ApiError, StatsResponse, HistoryItem, AnalyzeResponse, BatchAnalyzeResponse };

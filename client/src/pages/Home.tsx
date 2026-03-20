@@ -22,6 +22,12 @@ type FileResult = {
   riskScore: number;
   decision: Decision;
   summary: string | null;
+  identity?: {
+    name?: string;
+    dob?: string;
+    address?: string;
+    confidence?: number;
+  } | null;
   createdAt: Date;
 };
 
@@ -63,6 +69,12 @@ const formatRunTime = (date: Date) => {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
+const formatKey = (key?: string) => {
+  if (!key) return '';
+  const parts = key.split('/');
+  return parts[parts.length - 1] || key;
+};
+
 const toFileResult = (result: AnalysisResult): FileResult => {
   const filename = result.filename || 'Untitled';
   const isPdf = filename.toLowerCase().endsWith('.pdf');
@@ -87,6 +99,7 @@ const toFileResult = (result: AnalysisResult): FileResult => {
     riskScore: result.riskScore,
     decision: result.decision as Decision,
     summary,
+    identity: result.identity || null,
     createdAt,
   };
 };
@@ -146,6 +159,7 @@ export default function Home() {
     scanDisabledReason,
     historyItems,
     clearHistory,
+    batchMetaById,
   } = useAnalysisSimulation();
 
   const safeResults = Array.isArray(results) ? results : [];
@@ -370,28 +384,56 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="mt-3 space-y-1 text-xs text-[var(--muted)]">
-                  {(Array.isArray(run.files) ? run.files : []).map((file) => (
-                    <div key={`${file.id}-name`} className="truncate" title={file.name}>
-                      {file.name}
-                    </div>
-                  ))}
-                </div>
+        <div className="mt-3 space-y-1 text-xs text-[var(--muted)]">
+          {(Array.isArray(run.files) ? run.files : []).map((file) => (
+            <div key={`${file.id}-name`} className="truncate" title={file.name}>
+              {file.name}
+            </div>
+          ))}
+        </div>
 
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="mt-4 grid gap-3">
-                        {(Array.isArray(run.files) ? run.files : []).map((file) => (
-                          <div
-                            key={`${file.id}-detail`}
-                            className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/60 p-4"
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 grid gap-3">
+                {batchMetaById[run.id] && (
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/60 p-4">
+                    <div className="text-xs text-[var(--muted)] uppercase tracking-wider font-semibold">
+                      Batch Summary
+                    </div>
+                    <div className="mt-2 grid gap-2 text-sm text-[var(--text)]">
+                      {typeof batchMetaById[run.id].overallRisk === "number" && (
+                        <div>Overall batch risk: {batchMetaById[run.id].overallRisk}%</div>
+                      )}
+                      {typeof batchMetaById[run.id].identitySimilarity === "number" && (
+                        <div>Identity similarity: {batchMetaById[run.id].identitySimilarity}</div>
+                      )}
+                      {batchMetaById[run.id].correlation?.conclusion && (
+                        <div>{batchMetaById[run.id].correlation?.conclusion}</div>
+                      )}
+                      {typeof batchMetaById[run.id].correlation?.confidence === "number" && (
+                        <div>
+                          Confidence: {batchMetaById[run.id].correlation?.confidence}
+                        </div>
+                      )}
+                      {batchMetaById[run.id].correlation?.story && (
+                        <div className="text-xs text-[var(--muted)] whitespace-pre-line">
+                          {batchMetaById[run.id].correlation?.story}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {(Array.isArray(run.files) ? run.files : []).map((file) => (
+                  <div
+                    key={`${file.id}-detail`}
+                    className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/60 p-4"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div>
@@ -412,6 +454,16 @@ export default function Home() {
                             <div className="mt-2 text-xs text-[var(--muted)]">
                               {file.summary || 'Summary unavailable.'}
                             </div>
+                            {file.identity && (
+                              <div className="mt-3 text-xs text-[var(--muted)] space-y-1">
+                                {file.identity.name && <div>Name: {file.identity.name}</div>}
+                                {file.identity.dob && <div>DOB: {file.identity.dob}</div>}
+                                {file.identity.address && <div>Address: {file.identity.address}</div>}
+                                {typeof file.identity.confidence === "number" && (
+                                  <div>OCR confidence: {file.identity.confidence}</div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -645,7 +697,14 @@ export default function Home() {
           ) : (
             <div className="space-y-3">
               {safeHistoryItems.slice(0, 6).map((item, index) => {
-                const score = Math.max(0, Math.min(100, Math.round(item.risk_score)));
+                const isBatch = item.job_type === "batch";
+                const scoreSource =
+                  typeof item.overall_risk === "number"
+                    ? item.overall_risk
+                    : typeof item.risk_score === "number"
+                      ? item.risk_score
+                      : 0;
+                const score = Math.max(0, Math.min(100, Math.round(scoreSource)));
                 const badge = historyBadge(score);
                 const timestamp = item.scan_time
                   ? new Date(item.scan_time)
@@ -656,17 +715,30 @@ export default function Home() {
                   hour: "numeric",
                   minute: "2-digit",
                 });
+                const summary =
+                  item.summary ||
+                  item.correlation?.story ||
+                  item.correlation?.conclusion ||
+                  (isBatch ? "Batch analysis completed." : "Summary unavailable.");
+                const fileNames = isBatch && item.files?.length
+                  ? item.files.map((file) => formatKey(file.key)).filter(Boolean).join(", ")
+                  : null;
                 return (
                   <div
-                    key={`${item.key}-${index}`}
+                    key={`${item.key || item.scan_time || index}`}
                     className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
                   >
                     <div>
                       <div className="text-sm font-semibold text-[var(--text)]">
                         {badge.label} — {label}
                       </div>
-                      <div className="text-xs text-[var(--muted)] mt-1">
-                        {item.summary || "Summary unavailable."}
+                      {fileNames && (
+                        <div className="text-xs text-[var(--muted)] mt-1">
+                          Files: {fileNames}
+                        </div>
+                      )}
+                      <div className="text-xs text-[var(--muted)] mt-1 whitespace-pre-line">
+                        {summary}
                       </div>
                     </div>
                     <div className="text-right">

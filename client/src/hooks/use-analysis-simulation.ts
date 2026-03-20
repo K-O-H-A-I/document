@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { ToolType, AnalysisResult, KpiStats } from '@shared/schema';
 import {
   analyzeDocument as apiAnalyzeDocument,
+  analyzeBatch as apiAnalyzeBatch,
   fetchHistory,
   fetchStats,
   getToken,
@@ -29,6 +30,16 @@ type ParsedRow = {
   mediaType: 'image' | 'video' | 'audio' | '';
   sourceKey?: string;
   sourceTool?: string;
+};
+
+type BatchMeta = {
+  overallRisk?: number;
+  identitySimilarity?: number;
+  correlation?: {
+    conclusion?: string;
+    confidence?: number;
+    story?: string;
+  };
 };
 
 const DEFAULT_MEDIA_API_BASE = "https://d1hj0828nk37mv.cloudfront.net";
@@ -814,7 +825,13 @@ const mapRiskToDecision = (riskScore: number) => {
 
 const mapHistoryToResults = (history: HistoryItem[]): AnalysisResult[] => {
   return history.map((item, index) => {
-    const riskScore = Math.max(0, Math.min(100, Math.round(item.risk_score)));
+    const riskSource =
+      typeof item.overall_risk === "number"
+        ? item.overall_risk
+        : typeof item.risk_score === "number"
+          ? item.risk_score
+          : 0;
+    const riskScore = Math.max(0, Math.min(100, Math.round(riskSource)));
     const { priority, decision } = mapRiskToDecision(riskScore);
     const filename = filenameForDisplay(item.key || `scan-${index + 1}`);
     const timestamp = item.scan_time ? new Date(item.scan_time) : new Date();
@@ -887,6 +904,7 @@ export function useAnalysisSimulation() {
   const [scanDisabled, setScanDisabled] = useState(false);
   const [scanDisabledReason, setScanDisabledReason] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [batchMetaById, setBatchMetaById] = useState<Record<string, BatchMeta>>({});
   const nextIdRef = useRef(1);
   const fileCacheRef = useRef<Map<string, File>>(new Map());
   const originalVideoNamesRef = useRef<Set<string>>(new Set());
@@ -973,54 +991,9 @@ export function useAnalysisSimulation() {
           setToastMessage(PHASE_MESSAGES[phaseIndex]);
         }, 900);
 
-        const analyzeSingle = async (file: File) => {
-          const uploadInfo = await getUploadUrl(token, file);
-          await uploadFile(uploadInfo.upload_url, file);
-          const analysis = await apiAnalyzeDocument(token, DOC_RISK_BUCKET, uploadInfo.key);
-
-          const summary = extractSummary(analysis) || "Summary unavailable.";
-          const riskScoreRaw =
-            typeof analysis.risk_score === "number"
-              ? analysis.risk_score
-              : typeof analysis.riskScore === "number"
-                ? analysis.riskScore
-                : 50;
-          const riskScore = Math.max(0, Math.min(100, Math.round(riskScoreRaw)));
-          const { priority, decision } = mapRiskToDecision(riskScore);
-          const previewUrl = URL.createObjectURL(file);
-          const now = Date.now();
-
-          const docResult: AnalysisResult = {
-            id: nextIdRef.current++,
-            filename: file.name,
-            toolType: "document",
-            riskScore,
-            priority,
-            decision,
-            evidence: [`Risk score: ${riskScore}`],
-            summary,
-            batchId,
-            actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
-            timestamp: new Date(now),
-            previewUrl,
-            previewUrls: null,
-            metadata: null,
-            geolocation: null,
-          };
-
-          return docResult;
-        };
-
-        const resultsSettled = await Promise.allSettled(
-          files.map((file) => analyzeSingle(file))
-        );
-
-        const failed = resultsSettled.filter((item) => item.status === "rejected");
-        if (failed.length > 0) {
-          const error = (failed[0] as PromiseRejectedResult).reason as ApiError;
+        const handleFailure = (error: ApiError) => {
           if (error && isAuthError(error)) {
             handleAuthFailure("Session expired. Please login again.");
-            window.clearInterval(phaseTimer);
             return;
           }
           if (error?.status === 403) {
@@ -1035,36 +1008,124 @@ export function useAnalysisSimulation() {
             } else {
               toast({ title: "Request blocked", description: message });
             }
-          } else if (error?.status === 500) {
-            toast({ title: "Upload service unavailable", description: "Upload service temporarily unavailable." });
-          } else {
-            toast({ title: "AI service unavailable", description: error?.message || "AI service temporarily unavailable." });
+            return;
           }
+          if (error?.status === 500) {
+            toast({ title: "Upload service unavailable", description: "Upload service temporarily unavailable." });
+            return;
+          }
+          toast({ title: "AI service unavailable", description: error?.message || "AI service temporarily unavailable." });
+        };
+
+        try {
+          const uploads = await Promise.all(
+            files.map(async (file) => {
+              const uploadInfo = await getUploadUrl(token, file);
+              await uploadFile(uploadInfo.upload_url, file);
+              return { file, key: uploadInfo.key };
+            })
+          );
+
+          const keyToFile = new Map(uploads.map((item) => [item.key, item.file]));
+          const now = Date.now();
+          let newResults: AnalysisResult[] = [];
+
+          if (uploads.length > 1) {
+            const batchResponse = await apiAnalyzeBatch(
+              token,
+              uploads.map((item) => ({ key: item.key }))
+            );
+
+            newResults = batchResponse.files.map((item) => {
+              const file = keyToFile.get(item.key);
+              const riskScore = Math.max(0, Math.min(100, Math.round(item.risk_score || 50)));
+              const { priority, decision } = mapRiskToDecision(riskScore);
+              const previewUrl = file ? URL.createObjectURL(file) : undefined;
+              return {
+                id: nextIdRef.current++,
+                filename: file?.name || item.key,
+                toolType: "document",
+                riskScore,
+                priority,
+                decision,
+                evidence: [`Risk score: ${riskScore}`],
+                summary: "Batch analysis completed.",
+                batchId,
+                actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+                timestamp: new Date(now),
+                previewUrl,
+                previewUrls: null,
+                identity: item.identity || null,
+                metadata: null,
+                geolocation: null,
+              };
+            });
+
+            const meta: BatchMeta = {
+              overallRisk: batchResponse.overall_batch_risk,
+              identitySimilarity: batchResponse.identity_similarity,
+              correlation: batchResponse.correlation,
+            };
+            setBatchMetaById((prev) => ({ ...prev, [batchId]: meta }));
+          } else {
+            const upload = uploads[0];
+            const analysis = await apiAnalyzeDocument(token, DOC_RISK_BUCKET, upload.key);
+            const summary = extractSummary(analysis) || "Summary unavailable.";
+            const riskScoreRaw =
+              typeof analysis.risk_score === "number"
+                ? analysis.risk_score
+                : typeof analysis.riskScore === "number"
+                  ? analysis.riskScore
+                  : 50;
+            const riskScore = Math.max(0, Math.min(100, Math.round(riskScoreRaw)));
+            const { priority, decision } = mapRiskToDecision(riskScore);
+            const previewUrl = URL.createObjectURL(upload.file);
+            newResults = [
+              {
+                id: nextIdRef.current++,
+                filename: upload.file.name,
+                toolType: "document",
+                riskScore,
+                priority,
+                decision,
+                evidence: [`Risk score: ${riskScore}`],
+                summary,
+                batchId,
+                actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+                timestamp: new Date(now),
+                previewUrl,
+                previewUrls: null,
+                metadata: null,
+                geolocation: null,
+              },
+            ];
+          }
+
+          const elapsed = Date.now() - start;
+          if (elapsed < minDelay) {
+            await sleep(minDelay - elapsed);
+          }
+
+          window.clearInterval(phaseTimer);
+          setToastMessage("Completed");
+          window.setTimeout(() => setToastMessage(null), 1600);
+
+          if (newResults.length > 0) {
+            setResults((prev) => {
+              const merged = [...newResults.reverse(), ...prev];
+              setStats(recomputeStats(merged));
+              return merged;
+            });
+          }
+
+          await refreshStats();
+          await loadHistory();
+        } catch (error) {
+          window.clearInterval(phaseTimer);
+          const err = error as ApiError;
+          handleFailure(err);
         }
 
-        const newResults = resultsSettled
-          .filter((item): item is PromiseFulfilledResult<AnalysisResult> => item.status === "fulfilled")
-          .map((item) => item.value);
-
-        const elapsed = Date.now() - start;
-        if (elapsed < minDelay) {
-          await sleep(minDelay - elapsed);
-        }
-
-        window.clearInterval(phaseTimer);
-        setToastMessage("Completed");
-        window.setTimeout(() => setToastMessage(null), 1600);
-
-        if (newResults.length > 0) {
-          setResults((prev) => {
-            const merged = [...newResults.reverse(), ...prev];
-            setStats(recomputeStats(merged));
-            return merged;
-          });
-        }
-
-        await refreshStats();
-        await loadHistory();
         return;
       }
 
@@ -1294,5 +1355,6 @@ export function useAnalysisSimulation() {
     scanDisabledReason,
     historyItems,
     clearHistory,
+    batchMetaById,
   };
 }

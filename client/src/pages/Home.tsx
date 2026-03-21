@@ -4,7 +4,20 @@ import { NavBar } from '@/components/NavBar';
 import { KpiTiles } from '@/components/KpiTiles';
 import { MainCard } from '@/components/MainCard';
 import { useAnalysisSimulation } from '@/hooks/use-analysis-simulation';
-import { Search, Download, Loader2, ChevronDown, FileText, X, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import {
+  Search,
+  Download,
+  Loader2,
+  ChevronDown,
+  FileText,
+  X,
+  ZoomIn,
+  ZoomOut,
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AnalysisResult, ToolType } from '@shared/schema';
@@ -38,6 +51,8 @@ type AnalysisRun = {
   overallDecision: Decision;
   files: FileResult[];
 };
+
+type ReactionValue = 'like' | 'dislike' | null;
 
 const decisionOrder: Record<Decision, number> = {
   APPROVE: 1,
@@ -177,6 +192,9 @@ export default function Home() {
   });
   const [previewFile, setPreviewFile] = useState<FileResult | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
+  const [reactions, setReactions] = useState<Record<string, ReactionValue>>({});
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -213,6 +231,26 @@ export default function Home() {
       document.body.style.overflow = previousOverflow;
     };
   }, [previewFile]);
+
+  useEffect(() => {
+    const savedFeedback = window.localStorage.getItem('docRiskFeedbackDraft');
+    if (savedFeedback) {
+      setFeedbackText(savedFeedback);
+    }
+  }, []);
+
+  const handleReaction = (fileId: string, reaction: Exclude<ReactionValue, null>) => {
+    setReactions((prev) => ({
+      ...prev,
+      [fileId]: prev[fileId] === reaction ? null : reaction,
+    }));
+  };
+
+  const handleFeedbackSave = () => {
+    window.localStorage.setItem('docRiskFeedbackDraft', feedbackText);
+    setFeedbackSaved(true);
+    window.setTimeout(() => setFeedbackSaved(false), 1600);
+  };
 
   const handleExport = () => {
     if (results.length === 0) return;
@@ -384,10 +422,41 @@ export default function Home() {
                   )}
                 </div>
 
-        <div className="mt-3 space-y-1 text-xs text-[var(--muted)]">
+        <div className="mt-3 space-y-2 text-xs text-[var(--muted)]">
           {(Array.isArray(run.files) ? run.files : []).map((file) => (
-            <div key={`${file.id}-name`} className="truncate" title={file.name}>
-              {file.name}
+            <div
+              key={`${file.id}-name`}
+              className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--panel2)]/35 px-3 py-2"
+            >
+              <div className="truncate" title={file.name}>
+                {file.name}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleReaction(file.id, 'like')}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    reactions[file.id] === 'like'
+                      ? 'border-[var(--ok)]/40 bg-[var(--ok)]/10 text-[var(--ok)]'
+                      : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                  )}
+                >
+                  <ThumbsUp className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleReaction(file.id, 'dislike')}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    reactions[file.id] === 'dislike'
+                      ? 'border-[var(--danger)]/40 bg-[var(--danger)]/10 text-[var(--danger)]'
+                      : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                  )}
+                >
+                  <ThumbsDown className="w-3 h-3" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -464,6 +533,34 @@ export default function Home() {
                                 )}
                               </div>
                             )}
+                            <div className="mt-4 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleReaction(file.id, 'like')}
+                                className={cn(
+                                  'inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                                  reactions[file.id] === 'like'
+                                    ? 'border-[var(--ok)]/40 bg-[var(--ok)]/10 text-[var(--ok)]'
+                                    : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                                )}
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                                Like
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleReaction(file.id, 'dislike')}
+                                className={cn(
+                                  'inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                                  reactions[file.id] === 'dislike'
+                                    ? 'border-[var(--danger)]/40 bg-[var(--danger)]/10 text-[var(--danger)]'
+                                    : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                                )}
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                                Dislike
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -639,6 +736,12 @@ export default function Home() {
 
         {/* Results Section */}
         <div className="mt-8">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel)] px-4 py-2 text-xs text-[var(--muted)] shadow-[var(--shadow)]">
+            <span className="font-semibold text-[var(--text)]">Today&apos;s scans</span>
+            <span>
+              {usageStats?.tokens_used_today ?? 0} / {usageStats?.token_limit_daily ?? 200}
+            </span>
+          </div>
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="heading-2">Recent Analysis</h2>
@@ -752,6 +855,39 @@ export default function Home() {
               })}
             </div>
           )}
+        </div>
+
+        <div className="mt-10">
+          <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--panel)] p-5 shadow-[var(--shadow)]">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="w-4 h-4 text-[var(--accent)]" />
+              <h2 className="text-lg font-semibold text-[var(--text)]">Feedback</h2>
+            </div>
+            <p className="text-sm text-[var(--muted)] mb-3">
+              Share issues, false positives, or UI feedback.
+            </p>
+            <textarea
+              value={feedbackText}
+              onChange={(event) => {
+                setFeedbackText(event.target.value);
+                setFeedbackSaved(false);
+              }}
+              placeholder="Write your feedback here..."
+              className="min-h-28 w-full rounded-xl border border-[var(--border)] bg-[var(--panel2)] px-4 py-3 text-sm text-[var(--text)] outline-none transition-colors focus:border-[var(--accent)]"
+            />
+            <div className="mt-3 flex items-center justify-between gap-4">
+              <span className="text-xs text-[var(--muted)]">
+                {feedbackSaved ? 'Saved locally.' : 'Feedback stays on this device until wired to backend.'}
+              </span>
+              <button
+                type="button"
+                onClick={handleFeedbackSave}
+                className="btn btn-secondary h-9 px-4 text-xs font-semibold uppercase tracking-wide"
+              >
+                Save feedback
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 

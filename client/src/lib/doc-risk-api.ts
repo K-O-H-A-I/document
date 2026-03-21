@@ -12,13 +12,11 @@ type UploadUrlResponse = {
   contentType?: string;
 };
 
-type UploadBatchResponse = {
-  items: UploadUrlResponse[];
-};
-
 type AnalyzeResponse = {
   risk_score: number;
   summary?: string;
+  tokens_used?: number;
+  cost_incurred?: number;
 };
 
 type BatchAnalyzeResponse = {
@@ -39,6 +37,20 @@ type BatchAnalyzeResponse = {
     confidence?: number;
     story?: string;
   };
+  tokens_used?: number;
+  cost_incurred?: number;
+};
+
+type BatchSubmitResponse = {
+  job_id: string;
+  status: string;
+};
+
+type BatchJobStatusResponse = {
+  job_id: string;
+  status: string;
+  error?: string;
+  result?: BatchAnalyzeResponse;
 };
 
 type StatsResponse = {
@@ -156,19 +168,6 @@ export const getUploadUrl = async (token: string, file: File) => {
   return postJson<UploadUrlResponse>("/get-upload-url", { ext }, token);
 };
 
-export const getUploadUrlsBatch = async (token: string, files: File[]) => {
-  const payload = {
-    files: files.map((file) => {
-      const ext = extFromFile(file) || "png";
-      return {
-        ext,
-        contentType: file.type || undefined,
-      };
-    }),
-  };
-  return postJson<UploadBatchResponse>("/get-upload-url", payload, token);
-};
-
 export const uploadFile = async (uploadUrl: string, file: File) => {
   const res = await fetch(uploadUrl, {
     method: "PUT",
@@ -183,12 +182,20 @@ export const uploadFile = async (uploadUrl: string, file: File) => {
   }
 };
 
-export const analyzeDocument = async (token: string, bucket: string, key: string) => {
-  return postJson<AnalyzeResponse>("/analyze", { bucket, key }, token);
+export const analyzeDocument = async (token: string, key: string) => {
+  return postJson<AnalyzeResponse>("/analyze", { key }, token);
 };
 
 export const analyzeBatch = async (token: string, files: Array<{ key: string }>) => {
   return postJson<BatchAnalyzeResponse>("/batch-analyze", { files }, token);
+};
+
+export const submitBatchAnalysis = async (token: string, files: Array<{ key: string }>) => {
+  return postJson<BatchSubmitResponse>("/batch-submit", { files }, token);
+};
+
+export const fetchBatchJobStatus = async (token: string, jobId: string) => {
+  return postJson<BatchJobStatusResponse>("/job-status", { job_id: jobId }, token);
 };
 
 export const fetchStats = async (token: string) => {
@@ -214,4 +221,12 @@ export const fetchHistory = async (token: string) => {
   return data;
 };
 
-export type { ApiError, StatsResponse, HistoryItem, AnalyzeResponse, BatchAnalyzeResponse };
+export type {
+  ApiError,
+  StatsResponse,
+  HistoryItem,
+  AnalyzeResponse,
+  BatchAnalyzeResponse,
+  BatchSubmitResponse,
+  BatchJobStatusResponse,
+};

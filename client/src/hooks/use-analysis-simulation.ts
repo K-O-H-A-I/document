@@ -3,11 +3,12 @@ import type { ToolType, AnalysisResult, KpiStats } from '@shared/schema';
 import {
   analyzeDocument as apiAnalyzeDocument,
   analyzeBatch as apiAnalyzeBatch,
+  fetchBatchJobStatus,
   fetchHistory,
   fetchStats,
   getToken,
   getUploadUrl,
-  getUploadUrlsBatch,
+  submitBatchAnalysis,
   uploadFile,
   clearToken,
   isAuthError,
@@ -36,6 +37,8 @@ type ParsedRow = {
 type BatchMeta = {
   overallRisk?: number;
   identitySimilarity?: number;
+  tokensUsed?: number;
+  costIncurred?: number;
   correlation?: {
     conclusion?: string;
     confidence?: number;
@@ -108,8 +111,6 @@ const DOCUMENT_API_URL = DEFAULT_DOCUMENT_UPLOAD_URL.trim();
 const DOCUMENT_API_BASE = DOCUMENT_API_URL.replace(/\/get-upload-url\/?$/, "");
 const DOCUMENT_ANALYZE_URL = `${DOCUMENT_API_BASE}/analyze`;
 const DOCUMENT_API_KEY = "";
-const DOCUMENT_BUCKET_FALLBACK = "doc-risk-demo-reagvis";
-const DOC_RISK_BUCKET = "doc-risk-demo-reagvis";
 const PHASE_MESSAGES = [
   "Analyzing document structure…",
   "Checking text alignment…",
@@ -117,8 +118,19 @@ const PHASE_MESSAGES = [
   "Validating authenticity signals…",
   "Finalizing risk score…",
 ];
+const DOCUMENT_BATCH_PHASES = {
+  uploading: "Uploading…",
+  submitting: "Submitting job…",
+  queued: "Queued…",
+  processing: "Analyzing documents…",
+  correlating: "Generating correlation…",
+  completed: "Completed.",
+} as const;
 const MIN_SCAN_DELAY_MS = 4000;
 const MAX_SCAN_DELAY_MS = 6000;
+const DOCUMENT_UPLOAD_DELAY_MS = 1100;
+const DOCUMENT_BATCH_POLL_INTERVAL_MS = 2500;
+const DOCUMENT_BATCH_MAX_POLLS = 40;
 const ORIGIN_VERIFY = String(runtimeConfig.ORIGIN_VERIFY || (window as any).ORIGIN_VERIFY || "").trim();
 const ORIGIN_VERIFY_HEADER = String(
   runtimeConfig.ORIGIN_VERIFY_HEADER || "x-origin-verify"
@@ -1023,31 +1035,16 @@ export function useAnalysisSimulation() {
         };
 
         try {
-          let uploads: Array<{ file: File; key: string }> = [];
-          if (files.length > 1) {
-            const batchUpload = await getUploadUrlsBatch(token, files);
-            const items = Array.isArray(batchUpload.items) ? batchUpload.items : [];
-            if (items.length !== files.length) {
-              throw {
-                status: 500,
-                message: "Upload service returned an unexpected response.",
-              } as ApiError;
+          const uploads: Array<{ file: File; key: string }> = [];
+          setToastMessage(DOCUMENT_BATCH_PHASES.uploading);
+          for (let index = 0; index < files.length; index += 1) {
+            const file = files[index];
+            const uploadInfo = await getUploadUrl(token, file);
+            await uploadFile(uploadInfo.upload_url, file);
+            uploads.push({ file, key: uploadInfo.key });
+            if (index < files.length - 1) {
+              await sleep(DOCUMENT_UPLOAD_DELAY_MS);
             }
-            uploads = await Promise.all(
-              items.map(async (item, idx) => {
-                const file = files[idx];
-                await uploadFile(item.upload_url, file);
-                return { file, key: item.key };
-              })
-            );
-          } else {
-            uploads = await Promise.all(
-              files.map(async (file) => {
-                const uploadInfo = await getUploadUrl(token, file);
-                await uploadFile(uploadInfo.upload_url, file);
-                return { file, key: uploadInfo.key };
-              })
-            );
           }
 
           const keyToFile = new Map(uploads.map((item) => [item.key, item.file]));
@@ -1055,10 +1052,61 @@ export function useAnalysisSimulation() {
           let newResults: AnalysisResult[] = [];
 
           if (uploads.length > 1) {
-            const batchResponse = await apiAnalyzeBatch(
-              token,
-              uploads.map((item) => ({ key: item.key }))
-            );
+            setToastMessage(DOCUMENT_BATCH_PHASES.submitting);
+            let batchResponse;
+            try {
+              const submitted = await submitBatchAnalysis(
+                token,
+                uploads.map((item) => ({ key: item.key }))
+              );
+
+              let jobResult = null as Awaited<ReturnType<typeof fetchBatchJobStatus>> | null;
+              for (let attempt = 0; attempt < DOCUMENT_BATCH_MAX_POLLS; attempt += 1) {
+                const polled = await fetchBatchJobStatus(token, submitted.job_id);
+                const status = String(polled.status || "").toUpperCase();
+
+                if (status === "QUEUED") {
+                  setToastMessage(DOCUMENT_BATCH_PHASES.queued);
+                } else if (status === "PROCESSING") {
+                  setToastMessage(
+                    attempt >= 1 ? DOCUMENT_BATCH_PHASES.correlating : DOCUMENT_BATCH_PHASES.processing
+                  );
+                } else if (status === "COMPLETED") {
+                  jobResult = polled;
+                  break;
+                } else if (status === "FAILED") {
+                  throw {
+                    status: 500,
+                    message: polled.error || "Batch analysis failed.",
+                  } as ApiError;
+                }
+
+                await sleep(DOCUMENT_BATCH_POLL_INTERVAL_MS);
+              }
+
+              if (!jobResult?.result) {
+                throw {
+                  status: 500,
+                  message: "Batch analysis timed out before completion.",
+                } as ApiError;
+              }
+
+              batchResponse = jobResult.result;
+            } catch (error) {
+              const err = error as ApiError;
+              const isMissingAsyncRoute =
+                err?.status === 404 ||
+                String(err?.message || "").toLowerCase().includes("unknown route");
+
+              if (!isMissingAsyncRoute) {
+                throw err;
+              }
+
+              batchResponse = await apiAnalyzeBatch(
+                token,
+                uploads.map((item) => ({ key: item.key }))
+              );
+            }
 
             newResults = batchResponse.files.map((item) => {
               const file = keyToFile.get(item.key);
@@ -1088,12 +1136,14 @@ export function useAnalysisSimulation() {
             const meta: BatchMeta = {
               overallRisk: batchResponse.overall_batch_risk,
               identitySimilarity: batchResponse.identity_similarity,
+              tokensUsed: batchResponse.tokens_used,
+              costIncurred: batchResponse.cost_incurred,
               correlation: batchResponse.correlation,
             };
             setBatchMetaById((prev) => ({ ...prev, [batchId]: meta }));
           } else {
             const upload = uploads[0];
-            const analysis = await apiAnalyzeDocument(token, DOC_RISK_BUCKET, upload.key);
+            const analysis = await apiAnalyzeDocument(token, upload.key);
             const summary = extractSummary(analysis) || "Summary unavailable.";
             const riskScoreRaw =
               typeof analysis.risk_score === "number"
@@ -1119,10 +1169,19 @@ export function useAnalysisSimulation() {
                 timestamp: new Date(now),
                 previewUrl,
                 previewUrls: null,
+                identity: null,
                 metadata: null,
                 geolocation: null,
               },
             ];
+
+            setBatchMetaById((prev) => ({
+              ...prev,
+              [batchId]: {
+                tokensUsed: analysis.tokens_used,
+                costIncurred: analysis.cost_incurred,
+              },
+            }));
           }
 
           const elapsed = Date.now() - start;
@@ -1131,7 +1190,7 @@ export function useAnalysisSimulation() {
           }
 
           window.clearInterval(phaseTimer);
-          setToastMessage("Completed");
+          setToastMessage(DOCUMENT_BATCH_PHASES.completed);
           window.setTimeout(() => setToastMessage(null), 1600);
 
           if (newResults.length > 0) {

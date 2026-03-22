@@ -14,6 +14,7 @@ export const analysisResults = pgTable("analysis_results", {
   evidence: jsonb("evidence").$type<string[]>().notNull(),
   summary: text("summary"),
   batchId: text("batch_id"),
+  storageKey: text("storage_key"),
   actionRequired: text("action_required"),
   timestamp: timestamp("timestamp").defaultNow(),
   previewUrl: text("preview_url"),

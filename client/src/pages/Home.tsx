@@ -4,6 +4,8 @@ import { NavBar } from '@/components/NavBar';
 import { KpiTiles } from '@/components/KpiTiles';
 import { MainCard } from '@/components/MainCard';
 import { useAnalysisSimulation } from '@/hooks/use-analysis-simulation';
+import { clearToken, getToken, isAuthError, submitFeedback, type ApiError } from '@/lib/doc-risk-api';
+import { getBasePath } from '@/lib/base-path';
 import {
   Search,
   Download,
@@ -35,6 +37,8 @@ type FileResult = {
   riskScore: number;
   decision: Decision;
   summary: string | null;
+  storageKey?: string | null;
+  batchId?: string | null;
   identity?: {
     name?: string;
     dob?: string;
@@ -114,6 +118,8 @@ const toFileResult = (result: AnalysisResult): FileResult => {
     riskScore: result.riskScore,
     decision: result.decision as Decision,
     summary,
+    storageKey: result.storageKey || null,
+    batchId: result.batchId || null,
     identity: result.identity || null,
     createdAt,
   };
@@ -195,6 +201,7 @@ export default function Home() {
   const [reactions, setReactions] = useState<Record<string, ReactionValue>>({});
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -245,11 +252,86 @@ export default function Home() {
       [fileId]: prev[fileId] === reaction ? null : reaction,
     }));
   };
+  const redirectToLogin = () => {
+    window.location.assign(`${getBasePath()}#/login`);
+  };
 
-  const handleFeedbackSave = () => {
-    window.localStorage.setItem('docRiskFeedbackDraft', feedbackText);
-    setFeedbackSaved(true);
-    window.setTimeout(() => setFeedbackSaved(false), 1600);
+  const handleApiFailure = (error: unknown, fallbackTitle: string) => {
+    const err = error as ApiError;
+    if (err && isAuthError(err)) {
+      clearToken();
+      redirectToLogin();
+      return true;
+    }
+    setToastMessage(err?.message || fallbackTitle);
+    window.setTimeout(() => setToastMessage(null), 1800);
+    return false;
+  };
+
+  const submitReaction = async (file: FileResult, reaction: Exclude<ReactionValue, null>) => {
+    const token = getToken();
+    if (!token) {
+      clearToken();
+      redirectToLogin();
+      return;
+    }
+
+    try {
+      await submitFeedback(token, {
+        source: 'frontend',
+        page: 'home',
+        reactions: [
+          {
+            filename: file.name,
+            image_key: file.storageKey || undefined,
+            job_id: file.batchId || undefined,
+            scan_time: file.createdAt.toISOString(),
+            reaction,
+          },
+        ],
+      });
+      setToastMessage(`Saved ${reaction} for ${file.name}`);
+      window.setTimeout(() => setToastMessage(null), 1400);
+    } catch (error) {
+      handleApiFailure(error, 'Unable to save reaction.');
+    }
+  };
+
+  const handleReactionClick = async (file: FileResult, reaction: Exclude<ReactionValue, null>) => {
+    const nextValue = reactions[file.id] === reaction ? null : reaction;
+    setReactions((prev) => ({
+      ...prev,
+      [file.id]: nextValue,
+    }));
+    if (!nextValue) return;
+    await submitReaction(file, reaction);
+  };
+
+  const handleFeedbackSave = async () => {
+    const trimmed = feedbackText.trim();
+    if (!trimmed) return;
+    const token = getToken();
+    if (!token) {
+      clearToken();
+      redirectToLogin();
+      return;
+    }
+    setIsSubmittingFeedback(true);
+    try {
+      await submitFeedback(token, {
+        feedback: trimmed,
+        source: 'frontend',
+        page: 'home',
+      });
+      window.localStorage.setItem('docRiskFeedbackDraft', trimmed);
+      setFeedbackSaved(true);
+      setFeedbackText('');
+      window.setTimeout(() => setFeedbackSaved(false), 1600);
+    } catch (error) {
+      handleApiFailure(error, 'Unable to submit feedback.');
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
   };
 
   const handleExport = () => {
@@ -434,7 +516,7 @@ export default function Home() {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => handleReaction(file.id, 'like')}
+                  onClick={() => handleReactionClick(file, 'like')}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
                     reactions[file.id] === 'like'
@@ -446,7 +528,7 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleReaction(file.id, 'dislike')}
+                  onClick={() => handleReactionClick(file, 'dislike')}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
                     reactions[file.id] === 'dislike'
@@ -536,7 +618,7 @@ export default function Home() {
                             <div className="mt-4 flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => handleReaction(file.id, 'like')}
+                                onClick={() => handleReactionClick(file, 'like')}
                                 className={cn(
                                   'inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
                                   reactions[file.id] === 'like'
@@ -549,7 +631,7 @@ export default function Home() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleReaction(file.id, 'dislike')}
+                                onClick={() => handleReactionClick(file, 'dislike')}
                                 className={cn(
                                   'inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
                                   reactions[file.id] === 'dislike'
@@ -877,14 +959,15 @@ export default function Home() {
             />
             <div className="mt-3 flex items-center justify-between gap-4">
               <span className="text-xs text-[var(--muted)]">
-                {feedbackSaved ? 'Saved locally.' : 'Feedback stays on this device until wired to backend.'}
+                {feedbackSaved ? 'Feedback submitted.' : 'Feedback is sent to backend with your username and timestamp.'}
               </span>
               <button
                 type="button"
                 onClick={handleFeedbackSave}
-                className="btn btn-secondary h-9 px-4 text-xs font-semibold uppercase tracking-wide"
+                disabled={isSubmittingFeedback || !feedbackText.trim()}
+                className="btn btn-secondary h-9 px-4 text-xs font-semibold uppercase tracking-wide disabled:opacity-100 disabled:cursor-not-allowed"
               >
-                Save feedback
+                {isSubmittingFeedback ? 'Submitting...' : 'Submit feedback'}
               </button>
             </div>
           </div>

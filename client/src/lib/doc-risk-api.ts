@@ -53,6 +53,26 @@ type BatchJobStatusResponse = {
   result?: BatchAnalyzeResponse;
 };
 
+type FeedbackReaction = {
+  filename?: string;
+  image_key?: string;
+  key?: string;
+  job_id?: string;
+  scan_time?: string;
+  reaction: "like" | "dislike";
+};
+
+type FeedbackSubmitResponse = {
+  ok: boolean;
+  message?: string;
+  item?: {
+    username?: string;
+    feedback?: string;
+    reaction_count?: number;
+    created_at?: string;
+  };
+};
+
 type StatsResponse = {
   tokens_used_today: number;
   token_limit_daily: number;
@@ -202,6 +222,18 @@ export const fetchStats = async (token: string) => {
   return postJson<StatsResponse>("/stats", {}, token);
 };
 
+export const submitFeedback = async (
+  token: string,
+  payload: {
+    feedback?: string;
+    source?: string;
+    page?: string;
+    reactions?: FeedbackReaction[];
+  }
+) => {
+  return postJson<FeedbackSubmitResponse>("/feedback", payload, token);
+};
+
 export const fetchHistory = async (token: string) => {
   const data = await postJson<HistoryItem[] | { items?: HistoryItem[] } | Record<string, unknown>>(
     "/history",
@@ -229,4 +261,6 @@ export type {
   BatchAnalyzeResponse,
   BatchSubmitResponse,
   BatchJobStatusResponse,
+  FeedbackReaction,
+  FeedbackSubmitResponse,
 };

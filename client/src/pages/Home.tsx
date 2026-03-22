@@ -6,6 +6,7 @@ import { MainCard } from '@/components/MainCard';
 import { useAnalysisSimulation } from '@/hooks/use-analysis-simulation';
 import { clearToken, getToken, isAuthError, submitFeedback, type ApiError } from '@/lib/doc-risk-api';
 import { getBasePath } from '@/lib/base-path';
+import { toast } from '@/hooks/use-toast';
 import {
   Search,
   Download,
@@ -246,12 +247,6 @@ export default function Home() {
     }
   }, []);
 
-  const handleReaction = (fileId: string, reaction: Exclude<ReactionValue, null>) => {
-    setReactions((prev) => ({
-      ...prev,
-      [fileId]: prev[fileId] === reaction ? null : reaction,
-    }));
-  };
   const redirectToLogin = () => {
     window.location.assign(`${getBasePath()}#/login`);
   };
@@ -263,8 +258,10 @@ export default function Home() {
       redirectToLogin();
       return true;
     }
-    setToastMessage(err?.message || fallbackTitle);
-    window.setTimeout(() => setToastMessage(null), 1800);
+    toast({
+      title: fallbackTitle,
+      description: err?.message || fallbackTitle,
+    });
     return false;
   };
 
@@ -290,8 +287,10 @@ export default function Home() {
           },
         ],
       });
-      setToastMessage(`Saved ${reaction} for ${file.name}`);
-      window.setTimeout(() => setToastMessage(null), 1400);
+      toast({
+        title: 'Reaction saved',
+        description: `${reaction} recorded for ${file.name}`,
+      });
     } catch (error) {
       handleApiFailure(error, 'Unable to save reaction.');
     }
@@ -326,6 +325,10 @@ export default function Home() {
       window.localStorage.setItem('docRiskFeedbackDraft', trimmed);
       setFeedbackSaved(true);
       setFeedbackText('');
+      toast({
+        title: 'Feedback submitted',
+        description: 'Your feedback was sent successfully.',
+      });
       window.setTimeout(() => setFeedbackSaved(false), 1600);
     } catch (error) {
       handleApiFailure(error, 'Unable to submit feedback.');

@@ -6,7 +6,7 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const isGitHubPages = Boolean(process.env.GITHUB_PAGES);
 
 export default defineConfig({
-  base: isGitHubPages ? "/document/" : "/",
+  base: "/",
   plugins: [
     react(),
     runtimeErrorOverlay(),

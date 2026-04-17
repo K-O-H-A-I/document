@@ -1417,6 +1417,23 @@ export function useAnalysisSimulation() {
     }
   }, []);
 
+  const updateDecisionLocal = useCallback(
+    (
+      resultId: number | string,
+      decision: 'APPROVE' | 'REJECT' | 'MANUAL_REVIEW'
+    ) => {
+      const normalizedId = String(resultId);
+      setResults((prev) => {
+        const updated = prev.map((item) =>
+          String(item.id) === normalizedId ? { ...item, decision } : item
+        );
+        setStats(recomputeStats(updated));
+        return updated;
+      });
+    },
+    []
+  );
+
   const updateDecision = useCallback((id: number, decision: AnalysisResult['decision']) => {
     setResults((prev) => {
       const updated = prev.map((item) =>
@@ -1434,6 +1451,7 @@ export function useAnalysisSimulation() {
     toastMessage,
     runAnalysis,
     updateDecision,
+    updateDecisionLocal,
     refreshStats,
     loadHistory,
     usageStats,

@@ -12,6 +12,7 @@ import {
   Download,
   Loader2,
   ChevronDown,
+  Check,
   FileText,
   X,
   ZoomIn,
@@ -182,6 +183,7 @@ export default function Home() {
     historyItems,
     clearHistory,
     batchMetaById,
+    updateDecisionLocal,
   } = useAnalysisSimulation();
 
   const safeResults = Array.isArray(results) ? results : [];
@@ -200,6 +202,7 @@ export default function Home() {
   const [previewFile, setPreviewFile] = useState<FileResult | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [reactions, setReactions] = useState<Record<string, ReactionValue>>({});
+  const [manualDecisions, setManualDecisions] = useState<Record<string, Decision>>({});
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
@@ -304,6 +307,23 @@ export default function Home() {
     }));
     if (!nextValue) return;
     await submitReaction(file, reaction);
+  };
+
+  const getEffectiveDecision = (file: FileResult): Decision => manualDecisions[file.id] ?? file.decision;
+
+  const handleDecisionClick = (
+    file: FileResult,
+    nextDecision: Exclude<Decision, 'MANUAL_REVIEW'>
+  ) => {
+    setManualDecisions((prev) => ({
+      ...prev,
+      [file.id]: nextDecision,
+    }));
+    updateDecisionLocal(file.id, nextDecision);
+    toast({
+      title: 'Decision updated',
+      description: `Marked ${file.name} as ${decisionLabel[nextDecision]}.`,
+    });
   };
 
   const handleFeedbackSave = async () => {
@@ -508,42 +528,69 @@ export default function Home() {
                 </div>
 
         <div className="mt-3 space-y-2 text-xs text-[var(--muted)]">
-          {(Array.isArray(run.files) ? run.files : []).map((file) => (
-            <div
-              key={`${file.id}-name`}
-              className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--panel2)]/35 px-3 py-2"
-            >
-              <div className="truncate" title={file.name}>
-                {file.name}
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleReactionClick(file, 'like')}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
-                    reactions[file.id] === 'like'
-                      ? 'border-[var(--ok)]/40 bg-[var(--ok)]/10 text-[var(--ok)]'
-                      : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+          {(Array.isArray(run.files) ? run.files : []).map((file) => {
+            const effectiveDecision = getEffectiveDecision(file);
+            const showAccept =
+              effectiveDecision === 'REJECT' || effectiveDecision === 'MANUAL_REVIEW';
+            const showReject =
+              effectiveDecision === 'APPROVE' || effectiveDecision === 'MANUAL_REVIEW';
+            return (
+              <div
+                key={`${file.id}-name`}
+                className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--panel2)]/35 px-3 py-2"
+              >
+                <div className="truncate" title={file.name}>
+                  {file.name}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleReactionClick(file, 'like')}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                      reactions[file.id] === 'like'
+                        ? 'border-[var(--ok)]/40 bg-[var(--ok)]/10 text-[var(--ok)]'
+                        : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                    )}
+                  >
+                    <ThumbsUp className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleReactionClick(file, 'dislike')}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                      reactions[file.id] === 'dislike'
+                        ? 'border-[var(--danger)]/40 bg-[var(--danger)]/10 text-[var(--danger)]'
+                        : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                    )}
+                  >
+                    <ThumbsDown className="w-3 h-3" />
+                  </button>
+                  {showAccept && (
+                    <button
+                      type="button"
+                      onClick={() => handleDecisionClick(file, 'APPROVE')}
+                      className="inline-flex items-center gap-1 rounded-full border border-[var(--ok)]/35 px-2.5 py-1 text-[11px] font-semibold text-[var(--ok)] transition-colors hover:bg-[var(--ok)]/15"
+                    >
+                      <Check className="w-3 h-3" />
+                      Accept
+                    </button>
                   )}
-                >
-                  <ThumbsUp className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleReactionClick(file, 'dislike')}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors',
-                    reactions[file.id] === 'dislike'
-                      ? 'border-[var(--danger)]/40 bg-[var(--danger)]/10 text-[var(--danger)]'
-                      : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                  {showReject && (
+                    <button
+                      type="button"
+                      onClick={() => handleDecisionClick(file, 'REJECT')}
+                      className="inline-flex items-center gap-1 rounded-full border border-[var(--danger)]/35 px-2.5 py-1 text-[11px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger)]/15"
+                    >
+                      <X className="w-3 h-3" />
+                      Reject
+                    </button>
                   )}
-                >
-                  <ThumbsDown className="w-3 h-3" />
-                </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <AnimatePresence>
@@ -571,11 +618,6 @@ export default function Home() {
                       {batchMetaById[run.id].correlation?.conclusion && (
                         <div>{batchMetaById[run.id].correlation?.conclusion}</div>
                       )}
-                      {typeof batchMetaById[run.id].correlation?.confidence === "number" && (
-                        <div>
-                          Confidence: {batchMetaById[run.id].correlation?.confidence}
-                        </div>
-                      )}
                       {batchMetaById[run.id].correlation?.story && (
                         <div className="text-xs text-[var(--muted)] whitespace-pre-line">
                           {batchMetaById[run.id].correlation?.story}
@@ -600,8 +642,13 @@ export default function Home() {
                               </div>
                               <div className="text-right">
                                 <div className="text-2xl font-bold text-[var(--text)]">{file.riskScore}%</div>
-                                <div className={cn('text-[11px] font-bold uppercase', decisionTextClass[file.decision])}>
-                                  {decisionLabel[file.decision]}
+                                <div
+                                  className={cn(
+                                    'text-[11px] font-bold uppercase',
+                                    decisionTextClass[getEffectiveDecision(file)]
+                                  )}
+                                >
+                                  {decisionLabel[getEffectiveDecision(file)]}
                                 </div>
                               </div>
                             </div>
@@ -613,9 +660,6 @@ export default function Home() {
                                 {file.identity.name && <div>Name: {file.identity.name}</div>}
                                 {file.identity.dob && <div>DOB: {file.identity.dob}</div>}
                                 {file.identity.address && <div>Address: {file.identity.address}</div>}
-                                {typeof file.identity.confidence === "number" && (
-                                  <div>OCR confidence: {file.identity.confidence}</div>
-                                )}
                               </div>
                             )}
                             <div className="mt-4 flex items-center gap-2">
@@ -645,6 +689,28 @@ export default function Home() {
                                 <ThumbsDown className="w-3.5 h-3.5" />
                                 Dislike
                               </button>
+                              {(getEffectiveDecision(file) === 'REJECT' ||
+                                getEffectiveDecision(file) === 'MANUAL_REVIEW') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDecisionClick(file, 'APPROVE')}
+                                  className="inline-flex items-center gap-1 rounded-full border border-[var(--ok)]/35 px-3 py-1.5 text-xs font-semibold text-[var(--ok)] transition-colors hover:bg-[var(--ok)]/15"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  Accept
+                                </button>
+                              )}
+                              {(getEffectiveDecision(file) === 'APPROVE' ||
+                                getEffectiveDecision(file) === 'MANUAL_REVIEW') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDecisionClick(file, 'REJECT')}
+                                  className="inline-flex items-center gap-1 rounded-full border border-[var(--danger)]/35 px-3 py-1.5 text-xs font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger)]/15"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  Reject
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}

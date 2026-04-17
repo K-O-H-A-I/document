@@ -204,7 +204,6 @@ export default function Home() {
   const [reactions, setReactions] = useState<Record<string, ReactionValue>>({});
   const [manualDecisions, setManualDecisions] = useState<Record<string, Decision>>({});
   const [feedbackText, setFeedbackText] = useState('');
-  const [feedbackSaved, setFeedbackSaved] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -343,13 +342,11 @@ export default function Home() {
         page: 'home',
       });
       window.localStorage.setItem('docRiskFeedbackDraft', trimmed);
-      setFeedbackSaved(true);
       setFeedbackText('');
       toast({
         title: 'Feedback submitted',
         description: 'Your feedback was sent successfully.',
       });
-      window.setTimeout(() => setFeedbackSaved(false), 1600);
     } catch (error) {
       handleApiFailure(error, 'Unable to submit feedback.');
     } finally {
@@ -1021,15 +1018,11 @@ export default function Home() {
               value={feedbackText}
               onChange={(event) => {
                 setFeedbackText(event.target.value);
-                setFeedbackSaved(false);
               }}
               placeholder="Write your feedback here..."
               className="min-h-28 w-full rounded-xl border border-[var(--border)] bg-[var(--panel2)] px-4 py-3 text-sm text-[var(--text)] outline-none transition-colors focus:border-[var(--accent)]"
             />
-            <div className="mt-3 flex items-center justify-between gap-4">
-              <span className="text-xs text-[var(--muted)]">
-                {feedbackSaved ? 'Feedback submitted.' : 'Feedback is sent to backend with your username and timestamp.'}
-              </span>
+            <div className="mt-3 flex justify-end">
               <button
                 type="button"
                 onClick={handleFeedbackSave}

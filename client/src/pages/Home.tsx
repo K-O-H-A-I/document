@@ -90,6 +90,19 @@ const formatRunTime = (date: Date) => {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
+const formatHistoryDateTime = (value?: string | Date | null) => {
+  if (!value) return "Unknown date";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown date";
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
 const formatKey = (key?: string) => {
   if (!key) return '';
   const parts = key.split('/');
@@ -199,6 +212,7 @@ export default function Home() {
     qwen: {},
     gpt: {},
   });
+  const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
   const [previewFile, setPreviewFile] = useState<FileResult | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [reactions, setReactions] = useState<Record<string, ReactionValue>>({});
@@ -394,6 +408,13 @@ export default function Home() {
         ...prev[panel],
         [runId]: !prev[panel][runId],
       },
+    }));
+  };
+
+  const toggleHistoryExpand = (historyId: string) => {
+    setExpandedHistory((prev) => ({
+      ...prev,
+      [historyId]: !prev[historyId],
     }));
   };
 
@@ -957,15 +978,15 @@ export default function Home() {
                       : 0;
                 const score = Math.max(0, Math.min(100, Math.round(scoreSource)));
                 const badge = historyBadge(score);
-                const timestamp = item.scan_time
-                  ? new Date(item.scan_time)
-                  : new Date();
-                const label = timestamp.toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                });
+                const historyId = [
+                  item.key ?? "",
+                  item.scan_time ?? "",
+                  item.job_type ?? "",
+                  String(score),
+                  String(index),
+                ].join("|");
+                const isExpanded = !!expandedHistory[historyId];
+                const label = formatHistoryDateTime(item.scan_time);
                 const summary =
                   item.summary ||
                   item.correlation?.story ||
@@ -976,28 +997,126 @@ export default function Home() {
                   : null;
                 return (
                   <div
-                    key={`${item.key || item.scan_time || index}`}
-                    className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                    key={historyId}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4"
                   >
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--text)]">
-                        {badge.label} — {label}
-                      </div>
-                      {fileNames && (
-                        <div className="text-xs text-[var(--muted)] mt-1">
-                          Files: {fileNames}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-[var(--text)]">
+                          {badge.label} — {label}
                         </div>
+                        {fileNames && (
+                          <div className="text-xs text-[var(--muted)] mt-1 truncate" title={fileNames}>
+                            Files: {fileNames}
+                          </div>
+                        )}
+                        <div className="text-xs text-[var(--muted)] mt-1 whitespace-pre-line line-clamp-2">
+                          {summary}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleHistoryExpand(historyId)}
+                          className="btn btn-ghost px-3 py-2 text-xs uppercase tracking-wider"
+                        >
+                          {isExpanded ? 'Collapse' : 'Expand'}
+                          <ChevronDown
+                            className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
+                          />
+                        </button>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-[var(--text)]">{score}%</div>
+                          <div className={cn("text-xs font-semibold uppercase", badge.className)}>
+                            {badge.label}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-3 border-t border-[var(--border)] pt-3 space-y-3">
+                            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
+                              <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
+                                Summary
+                              </div>
+                              <div className="text-xs text-[var(--muted)] whitespace-pre-line">
+                                {summary}
+                              </div>
+                            </div>
+
+                            {item.correlation?.conclusion && (
+                              <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
+                                <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
+                                  Correlation Conclusion
+                                </div>
+                                <div className="text-xs text-[var(--muted)] whitespace-pre-line">
+                                  {item.correlation.conclusion}
+                                </div>
+                              </div>
+                            )}
+
+                            {item.correlation?.story && (
+                              <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
+                                <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
+                                  Correlation Story
+                                </div>
+                                <div className="text-xs text-[var(--muted)] whitespace-pre-line">
+                                  {item.correlation.story}
+                                </div>
+                              </div>
+                            )}
+
+                            {typeof item.identity_similarity === "number" && (
+                              <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
+                                <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
+                                  Identity Similarity
+                                </div>
+                                <div className="text-xs text-[var(--muted)]">
+                                  {item.identity_similarity}
+                                </div>
+                              </div>
+                            )}
+
+                            {isBatch && Array.isArray(item.files) && item.files.length > 0 && (
+                              <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
+                                <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-2">
+                                  Batch Files
+                                </div>
+                                <div className="space-y-2">
+                                  {item.files.map((file, fileIndex) => {
+                                    const fileRisk = Math.max(
+                                      0,
+                                      Math.min(100, Math.round(file.risk_score ?? 0))
+                                    );
+                                    const fileLabel = formatKey(file.key) || file.key || `File ${fileIndex + 1}`;
+                                    return (
+                                      <div
+                                        key={`${historyId}-file-${file.key || fileIndex}`}
+                                        className="rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-2 flex items-center justify-between gap-3"
+                                      >
+                                        <div className="min-w-0 text-xs text-[var(--text)] truncate" title={fileLabel}>
+                                          {fileLabel}
+                                        </div>
+                                        <div className="text-xs text-[var(--muted)] shrink-0">{fileRisk}%</div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
                       )}
-                      <div className="text-xs text-[var(--muted)] mt-1 whitespace-pre-line">
-                        {summary}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-[var(--text)]">{score}%</div>
-                      <div className={cn("text-xs font-semibold uppercase", badge.className)}>
-                        {badge.label}
-                      </div>
-                    </div>
+                    </AnimatePresence>
                   </div>
                 );
               })}

@@ -31,6 +31,9 @@ type ReportRun = {
 
 type BatchMeta = {
   overallRisk?: number;
+  verdict?: string;
+  risk?: string;
+  finalVerdict?: any;
   identitySimilarity?: number;
   correlation?: {
     conclusion?: string;
@@ -935,6 +938,31 @@ const getRiskTone = (riskScore: number): StatusTone => {
 
 const verdictText = (decision: Decision) => decisionLabel[decision];
 
+const formatCaseVerdict = (value?: string) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+  return normalized
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const toneFromPromptVerdict = (verdict?: string, fallbackRisk?: number): StatusTone => {
+  const normalized = String(verdict || '').toUpperCase();
+  if (normalized.includes('FAKE') || normalized.includes('REJECT')) return 'bad';
+  if (normalized.includes('SUSPICIOUS') || normalized.includes('INSUFFICIENT') || normalized.includes('UNVERIFIABLE')) {
+    return 'warn';
+  }
+  if (normalized.includes('AUTHENTIC') || normalized.includes('VERIFIED')) return 'ok';
+  return typeof fallbackRisk === 'number' ? getRiskTone(fallbackRisk) : 'na';
+};
+
+const compactList = (items: string[], fallback: string) => {
+  const cleaned = items.map((item) => item.trim()).filter(Boolean);
+  if (!cleaned.length) return fallback;
+  return cleaned.slice(0, 4).join('; ');
+};
+
 const collectComparableValue = (
   files: ReportFile[],
   selector: (file: ReportFile) => string | undefined
@@ -968,6 +996,34 @@ const buildMatchCell = (
 
 const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
   const files = run.files.slice(0, 10);
+  const finalVerdict = batchMeta?.finalVerdict || {};
+  const candidate = finalVerdict?.candidate || {};
+  const academicTimeline = Array.isArray(finalVerdict?.academic?.timeline)
+    ? finalVerdict.academic.timeline
+    : [];
+  const employmentTimeline = Array.isArray(finalVerdict?.employment?.timeline)
+    ? finalVerdict.employment.timeline
+    : [];
+  const perDocVerdicts = Array.isArray(finalVerdict?.per_doc_verdicts)
+    ? finalVerdict.per_doc_verdicts
+    : [];
+  const fraudPatterns = Array.isArray(finalVerdict?.fraud_patterns)
+    ? finalVerdict.fraud_patterns
+    : [];
+  const missingDocs = Array.isArray(finalVerdict?.missing_docs)
+    ? finalVerdict.missing_docs
+    : [];
+  const docsExcluded = Array.isArray(finalVerdict?.docs_excluded)
+    ? finalVerdict.docs_excluded
+    : [];
+  const hasPrompt2 =
+    Boolean(finalVerdict?.verdict) ||
+    Boolean(finalVerdict?.summary) ||
+    Boolean(candidate?.name) ||
+    perDocVerdicts.length > 0 ||
+    academicTimeline.length > 0 ||
+    employmentTimeline.length > 0;
+  const caseVerdict = formatCaseVerdict(finalVerdict?.verdict || batchMeta?.verdict);
   const overallRisk =
     typeof batchMeta?.overallRisk === 'number'
       ? Math.round(batchMeta.overallRisk)
@@ -975,61 +1031,123 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
   const identitySimilarity =
     typeof batchMeta?.identitySimilarity === 'number'
       ? `${Math.round(batchMeta.identitySimilarity)}%`
-      : 'N/A';
-  const correlationSummary = batchMeta?.correlation?.conclusion?.trim() || 'Cross-document review completed.';
+      : hasPrompt2
+        ? 'Prompt 2'
+        : 'N/A';
+  const correlationSummary =
+    finalVerdict?.summary?.trim() ||
+    batchMeta?.correlation?.conclusion?.trim() ||
+    'Cross-document review completed.';
   const analystNotes =
+    finalVerdict?.summary?.trim() ||
     batchMeta?.correlation?.story?.trim() ||
     files
       .map((file) => file.summary?.trim())
       .filter((summary): summary is string => Boolean(summary))
       .join(' ');
 
-  const canonicalName = collectComparableValue(files, (file) => file.identity?.name);
-  const canonicalDob = collectComparableValue(files, (file) => file.identity?.dob);
+  const canonicalName = candidate?.name?.trim() || collectComparableValue(files, (file) => file.identity?.name);
+  const canonicalDob = candidate?.dob?.trim() || collectComparableValue(files, (file) => file.identity?.dob);
   const canonicalAddress = collectComparableValue(files, (file) => file.identity?.address);
 
   const executiveSummary =
-    run.overallDecision === 'REJECT'
+    finalVerdict?.summary?.trim() ||
+    (run.overallDecision === 'REJECT'
       ? 'One or more uploaded documents show high-risk forensic signals and require rejection.'
       : run.overallDecision === 'MANUAL_REVIEW'
         ? 'The batch contains mixed authenticity signals and should be manually reviewed before approval.'
-        : 'The uploaded documents show acceptable consistency against the currently available forensic checks.';
+        : 'The uploaded documents show acceptable consistency against the currently available forensic checks.');
 
   const identitySummary =
-    canonicalName || canonicalDob || canonicalAddress
+    hasPrompt2 && (canonicalName || canonicalDob)
+      ? `Prompt 2 resolved candidate${canonicalName ? ` as ${canonicalName}` : ''}${canonicalDob ? `, DOB ${canonicalDob}` : ''}.`
+      : canonicalName || canonicalDob || canonicalAddress
       ? `Primary identity anchors detected across ${files.length} document${files.length === 1 ? '' : 's'}.`
       : 'Identity fields were limited in the returned analysis payload.';
 
-  const exceptionSummary = files
-    .filter((file) => file.decision !== 'APPROVE')
-    .map((file) => `${file.name}: ${verdictText(file.decision)}`)
-    .join('; ') || 'No material exceptions flagged.';
+  const exceptionSummary = compactList(
+    [
+      ...fraudPatterns.map((item: any) => `${item.sev || 'FLAG'}: ${item.pattern || item.detail || item.evidence || 'Fraud pattern flagged'}`),
+      ...missingDocs.map((item: any) => `Missing ${item.type || 'document'}${item.impact ? ` (${item.impact})` : ''}`),
+      ...docsExcluded.map((item: any) => `Excluded ${item.doc || 'document'}: ${item.reason || 'not analyzed'}`),
+      ...perDocVerdicts
+        .filter((item: any) => !/AUTHENTIC|VERIFIED/i.test(String(item.verdict || '')))
+        .map((item: any) => `${item.doc || 'Document'}: ${item.verdict || 'Review'}${item.key_flag ? ` - ${item.key_flag}` : ''}`),
+      ...files
+        .filter((file) => file.decision !== 'APPROVE')
+        .map((file) => `${file.name}: ${verdictText(file.decision)}`),
+    ],
+    'No material exceptions flagged.'
+  );
 
-  const rowBuilders: Array<{ label: string; build: (file: ReportFile) => MatrixCell }> = [
+  const promptDocFor = (index: number) => perDocVerdicts[index] || null;
+  const academicFor = (index: number) => academicTimeline[index] || null;
+  const employmentFor = (index: number) => employmentTimeline[index] || null;
+
+  const rowBuilders: Array<{ label: string; build: (file: ReportFile, index: number) => MatrixCell }> = [
     {
       label: 'KYC Verdict',
-      build: (file) => ({
-        tone: file.decision === 'REJECT' ? 'bad' : file.decision === 'MANUAL_REVIEW' ? 'warn' : 'ok',
-        note: verdictText(file.decision),
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: formatCaseVerdict(promptDoc.verdict) || String(promptDoc.verdict),
+          };
+        }
+        return {
+          tone: file.decision === 'REJECT' ? 'bad' : file.decision === 'MANUAL_REVIEW' ? 'warn' : 'ok',
+          note: verdictText(file.decision),
+        };
+      },
     },
     {
       label: 'Authenticity Signals',
-      build: (file) => ({
-        tone: getRiskTone(file.riskScore),
-        note: `${file.riskScore}% risk`,
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.confidence || promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: `${formatCaseVerdict(promptDoc.verdict) || 'Analyzed'}${promptDoc.confidence ? ` (${promptDoc.confidence}%)` : ''}`,
+          };
+        }
+        return {
+          tone: getRiskTone(file.riskScore),
+          note: `${file.riskScore}% risk`,
+        };
+      },
     },
     {
       label: 'Security / Tamper Check',
-      build: (file) => ({
-        tone: getRiskTone(file.riskScore),
-        note: file.summary?.trim() || 'Derived from model risk score',
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.key_flag) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: promptDoc.key_flag,
+          };
+        }
+        return {
+          tone: getRiskTone(file.riskScore),
+          note: file.summary?.trim() || analystNotes || 'Derived from model risk score',
+        };
+      },
     },
     {
       label: 'OCR / Data Extraction',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        const employmentItem = employmentFor(index);
+        const promptDoc = promptDocFor(index);
+        if (hasPrompt2 && (academicItem || employmentItem || candidate?.name || promptDoc?.verdict)) {
+          const pieces = [
+            candidate?.name ? `Name: ${candidate.name}` : '',
+            academicItem?.institution ? `Institution: ${academicItem.institution}` : '',
+            employmentItem?.company ? `Company: ${employmentItem.company}` : '',
+            academicItem?.year ? `Year: ${academicItem.year}` : '',
+          ].filter(Boolean);
+          return { tone: 'ok', note: pieces.slice(0, 2).join('; ') || 'Prompt 2 structured data available' };
+        }
         const confidence = file.identity?.confidence;
         if (typeof confidence === 'number') {
           return {
@@ -1069,7 +1187,18 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     },
     {
       label: 'Data Field Completeness',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        const employmentItem = employmentFor(index);
+        if (hasPrompt2 && (candidate?.name || candidate?.dob || academicItem || employmentItem)) {
+          const fields = [
+            candidate?.name,
+            candidate?.dob,
+            academicItem?.institution || employmentItem?.company,
+            academicItem?.year || employmentItem?.join_doc,
+          ].filter(Boolean).length;
+          return { tone: fields >= 2 ? 'ok' : 'warn', note: `${fields} Prompt 2 fields available` };
+        }
         const fieldCount = [file.identity?.name, file.identity?.dob, file.identity?.address].filter(Boolean).length;
         if (fieldCount >= 3) return { tone: 'ok', note: 'Core fields present' };
         if (fieldCount >= 1) return { tone: 'warn', note: `${fieldCount}/3 fields present` };
@@ -1082,35 +1211,79 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     },
     {
       label: 'Institution / Certificate Validation',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        if (academicItem) {
+          return {
+            tone: toneFromPromptVerdict(academicItem.status, file.riskScore),
+            note: `${academicItem.status || 'Academic data'}${academicItem.institution ? `: ${academicItem.institution}` : ''}`,
+          };
+        }
         const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'Requires issuer check' } : { tone: 'na', note: 'Not applicable' };
       },
     },
     {
       label: 'Certificate / Degree Genuine',
-      build: (file) => {
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: `${formatCaseVerdict(promptDoc.verdict) || promptDoc.verdict}${promptDoc.confidence ? ` (${promptDoc.confidence}%)` : ''}`,
+          };
+        }
         const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'Manual validation pending' } : { tone: 'na', note: 'Not applicable' };
       },
     },
     {
       label: 'Marks / CGPA / Grade Consistency',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        if (academicItem) {
+          const pctValues = [
+            typeof academicItem.pct_marksheet === 'number' && academicItem.pct_marksheet > 0 ? `marksheet ${academicItem.pct_marksheet}%` : '',
+            typeof academicItem.pct_certificate === 'number' && academicItem.pct_certificate > 0 ? `certificate ${academicItem.pct_certificate}%` : '',
+            academicItem.pct_conflict_detail || '',
+          ].filter(Boolean);
+          return {
+            tone: academicItem.pct_conflict ? 'warn' : toneFromPromptVerdict(academicItem.status, file.riskScore),
+            note: pctValues.join('; ') || `${academicItem.level || 'Academic'} ${academicItem.status || 'reviewed'}`,
+          };
+        }
         const isAcademic = /marks|grade|cgpa|transcript/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'No structured marks payload' } : { tone: 'na', note: 'Not applicable' };
       },
     },
     {
       label: 'Date Correlation Across Batch',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        const employmentItem = employmentFor(index);
+        if (academicItem?.year) {
+          return { tone: academicItem.year_resume_match === false ? 'warn' : 'ok', note: `Academic year ${academicItem.year}` };
+        }
+        if (employmentItem?.join_doc || employmentItem?.leave_doc) {
+          return {
+            tone: employmentItem.dates_match === false ? 'warn' : 'ok',
+            note: [employmentItem.join_doc, employmentItem.leave_doc].filter(Boolean).join(' to '),
+          };
+        }
         if (files.length <= 1) return { tone: 'na', note: 'Single document batch' };
         return buildMatchCell(file.identity?.dob, canonicalDob, 'Date');
       },
     },
     {
       label: 'Issue / Exam / Academic Timeline Plausible',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        if (academicItem) {
+          return {
+            tone: academicItem.age_flag || academicItem.status === 'DISCREPANCY' ? 'warn' : 'ok',
+            note: `${academicItem.level || 'Academic'} ${academicItem.year || ''} ${academicItem.status || 'reviewed'}`.trim(),
+          };
+        }
         const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'Timeline not structured' } : { tone: 'na', note: 'Not applicable' };
       },
@@ -1132,17 +1305,27 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     },
     {
       label: 'Per-Document Final Verdict',
-      build: (file) => ({
-        tone: getRiskTone(file.riskScore),
-        note: verdictText(file.decision),
-        score: file.riskScore,
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: formatCaseVerdict(promptDoc.verdict) || String(promptDoc.verdict),
+            score: typeof promptDoc.confidence === 'number' ? promptDoc.confidence : file.riskScore,
+          };
+        }
+        return {
+          tone: getRiskTone(file.riskScore),
+          note: verdictText(file.decision),
+          score: file.riskScore,
+        };
+      },
     },
   ];
 
   const matrixRows: MatrixRow[] = rowBuilders.map((row) => ({
     label: row.label,
-    cells: files.map((file) => row.build(file)),
+    cells: files.map((file, index) => row.build(file, index)),
   }));
 
   const docHeaders = files
@@ -1220,7 +1403,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
             <section class="summary-row">
               <div class="summary-card primary">
                 <div class="summary-title">Executive Summary</div>
-                <div class="summary-value">${escapeHtml(verdictText(run.overallDecision))}</div>
+                <div class="summary-value">${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</div>
                 <div class="summary-note">${escapeHtml(executiveSummary)}</div>
               </div>
               <div class="summary-card">
@@ -1254,18 +1437,18 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               <div class="matrix-summary">
                 <div class="matrix-summary-card primary">
                   <div class="matrix-summary-label">Batch Verdict</div>
-                  <div class="matrix-summary-value">${escapeHtml(verdictText(run.overallDecision))}</div>
+                  <div class="matrix-summary-value">${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</div>
                   <div class="matrix-summary-note">${escapeHtml(correlationSummary)}</div>
                 </div>
                 <div class="matrix-summary-card">
                   <div class="matrix-summary-label">Identity Summary</div>
                   <div class="matrix-summary-value">${escapeHtml(identitySummary)}</div>
-                  <div class="matrix-summary-note">Based on identity fields returned by the API.</div>
+                  <div class="matrix-summary-note">Based on the final Prompt 2 verdict when available.</div>
                 </div>
                 <div class="matrix-summary-card">
                   <div class="matrix-summary-label">Date Summary</div>
                   <div class="matrix-summary-value">${escapeHtml(canonicalDob || 'Insufficient date data')}</div>
-                  <div class="matrix-summary-note">DOB matching is only available when OCR identity data is returned.</div>
+                  <div class="matrix-summary-note">DOB or document dates are shown when returned by Prompt 2.</div>
                 </div>
                 <div class="matrix-summary-card">
                   <div class="matrix-summary-label">Exception Summary</div>

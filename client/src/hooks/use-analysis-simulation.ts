@@ -41,6 +41,7 @@ type BatchMeta = {
   costIncurred?: number;
   verdict?: string;
   risk?: string;
+  finalVerdict?: any;
   correlation?: {
     conclusion?: string;
     confidence?: number;
@@ -923,7 +924,16 @@ const buildResultsFromCaseJob = (
       timestamp: new Date(now),
       previewUrl: URL.createObjectURL(upload.file),
       previewUrls: null,
-      identity: null,
+      identity: finalVerdict?.candidate
+        ? {
+            name: finalVerdict.candidate.name || undefined,
+            dob: finalVerdict.candidate.dob || undefined,
+            confidence:
+              typeof finalVerdict.confidence === "number"
+                ? finalVerdict.confidence / 100
+                : undefined,
+          }
+        : null,
       metadata: null,
       geolocation: null,
     } satisfies AnalysisResult;
@@ -1255,8 +1265,8 @@ export function useAnalysisSimulation() {
             } else {
               newResults = buildResultsFromCaseJob(jobResult, uploads, batchId, now, nextIdRef);
 
-              const finalVerdict = jobResult.final_verdict || {};
-              const resultSummary = jobResult.result_summary || {};
+              const finalVerdict = jobResult.final_verdict || jobResult.result?.final_verdict || {};
+              const resultSummary = jobResult.result_summary || jobResult.result?.result_summary || {};
               setBatchMetaById((prev) => ({
                 ...prev,
                 [batchId]: {
@@ -1266,6 +1276,7 @@ export function useAnalysisSimulation() {
                   ),
                   verdict: finalVerdict.verdict || resultSummary.verdict,
                   risk: finalVerdict.risk || resultSummary.risk,
+                  finalVerdict,
                   tokensUsed: (jobResult as any).tokens_used,
                   costIncurred: (jobResult as any).cost_incurred,
                   correlation: {

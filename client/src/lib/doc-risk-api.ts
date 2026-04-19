@@ -12,6 +12,10 @@ type UploadUrlResponse = {
   contentType?: string;
 };
 
+type UploadUrlsResponse = {
+  items: UploadUrlResponse[];
+};
+
 type BatchAnalyzeResponse = {
   files: Array<{
     key: string;
@@ -206,6 +210,16 @@ export const getUploadUrl = async (token: string, file: File) => {
     { ext, contentType: file.type || undefined },
     token
   );
+};
+
+export const getUploadUrls = async (token: string, files: File[]) => {
+  const payload = {
+    files: files.map((file) => ({
+      ext: extFromFile(file) || "png",
+      contentType: file.type || undefined,
+    })),
+  };
+  return postJson<UploadUrlsResponse>("/get-upload-url", payload, token);
 };
 
 export const uploadFile = async (uploadUrl: string, file: File, contentType?: string) => {

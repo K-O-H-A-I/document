@@ -7,7 +7,7 @@ import {
   fetchHistory,
   fetchStats,
   getToken,
-  getUploadUrl,
+  getUploadUrls,
   submitBatchAnalysis,
   uploadFile,
   clearToken,
@@ -134,7 +134,6 @@ const DOCUMENT_BATCH_PHASES = {
 } as const;
 const MIN_SCAN_DELAY_MS = 4000;
 const MAX_SCAN_DELAY_MS = 6000;
-const DOCUMENT_UPLOAD_DELAY_MS = 1100;
 const DOCUMENT_BATCH_POLL_INTERVAL_MS = 2500;
 const DOCUMENT_BATCH_MAX_POLLS = 40;
 const ORIGIN_VERIFY = String(runtimeConfig.ORIGIN_VERIFY || (window as any).ORIGIN_VERIFY || "").trim();
@@ -1133,14 +1132,19 @@ export function useAnalysisSimulation() {
         try {
           const uploads: UploadedDocument[] = [];
           setToastMessage(DOCUMENT_BATCH_PHASES.uploading);
+          const uploadInfos = await getUploadUrls(token, files);
+          if (!Array.isArray(uploadInfos.items) || uploadInfos.items.length !== files.length) {
+            throw {
+              status: 500,
+              message: "Upload service returned an incomplete presign response.",
+            } as ApiError;
+          }
+
           for (let index = 0; index < files.length; index += 1) {
             const file = files[index];
-            const uploadInfo = await getUploadUrl(token, file);
+            const uploadInfo = uploadInfos.items[index];
             await uploadFile(uploadInfo.upload_url, file, uploadInfo.contentType);
             uploads.push({ file, key: uploadInfo.key });
-            if (index < files.length - 1) {
-              await sleep(DOCUMENT_UPLOAD_DELAY_MS);
-            }
           }
 
           const keyToFile = new Map(uploads.map((item) => [item.key, item.file]));

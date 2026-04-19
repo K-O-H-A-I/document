@@ -17,7 +17,7 @@ type SelectedFile = {
   error?: string;
 };
 
-const MAX_FILES = 3;
+const MAX_FILES = 10;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_PDF_SIZE = 20 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png"];
@@ -85,7 +85,7 @@ export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }:
           continue;
         }
         if (remainingSlots <= 0) {
-          nextWarnings.push("Max 3 files allowed. Extra files were ignored.");
+          nextWarnings.push(`Max ${MAX_FILES} files allowed. Extra files were ignored.`);
           break;
         }
         existingSignatures.add(signature);
@@ -178,7 +178,7 @@ export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }:
         </div>
 
         <div className="text-xs text-[var(--muted)]">
-          Max 3 files • Images ≤ 10MB • PDF ≤ 20MB
+          Max 10 files • Images ≤ 10MB • PDF ≤ 20MB
         </div>
 
         {errors.length > 0 && (
@@ -247,7 +247,7 @@ export function MainCard({ onAnalyze, isAnalyzing, isDisabled, disabledReason }:
         <div className="flex items-center justify-between gap-4 pt-2">
           <div className="text-xs text-[var(--muted)]">
             {selectedFiles.length === 0
-              ? "Select up to 3 files to begin."
+              ? `Select up to ${MAX_FILES} files to begin.`
               : `${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""} ready.`}
           </div>
           <button

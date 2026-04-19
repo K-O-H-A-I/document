@@ -379,6 +379,7 @@ const fetchJob = async (
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const MAX_DOCUMENT_FILES = 10;
 
 const redirectToLogin = () => {
   window.location.assign(`${getBasePath()}#/login`);
@@ -407,9 +408,9 @@ const collectFaceMatchFiles = (files: File[]) => {
   if (matches.input) ordered.push(matches.input);
   if (matches.swapped) ordered.push(matches.swapped);
 
-  if (ordered.length > 0) return ordered.slice(0, 3);
+  if (ordered.length > 0) return ordered.slice(0, MAX_DOCUMENT_FILES);
 
-  return files.slice(0, 3);
+  return files.slice(0, MAX_DOCUMENT_FILES);
 };
 
 const buildFaceMatchPreviewUrls = (files: File[]) =>

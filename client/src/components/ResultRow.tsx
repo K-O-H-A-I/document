@@ -35,7 +35,7 @@ export function ResultRow({ result, onApprove, onReject, onManualReview }: Resul
       };
       return (
         <div className="flex items-center gap-2" onClick={handleClick}>
-          {result.previewUrls.slice(0, 3).map((url, idx) => (
+          {result.previewUrls.slice(0, 10).map((url, idx) => (
             <img
               key={`${result.id}-thumb-${idx}`}
               src={url}
@@ -79,7 +79,7 @@ export function ResultRow({ result, onApprove, onReject, onManualReview }: Resul
     if (result.previewUrls && result.previewUrls.length > 0) {
       content = (
         <div className="flex flex-wrap items-center justify-center gap-4">
-          {result.previewUrls.slice(0, 3).map((url, idx) => (
+          {result.previewUrls.slice(0, 10).map((url, idx) => (
             <img
               key={`${result.id}-large-${idx}`}
               src={url}

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { NavBar } from '@/components/NavBar';
 import { KpiTiles } from '@/components/KpiTiles';
 import { MainCard } from '@/components/MainCard';
-import { ForensicReportFrame } from '@/components/ForensicReportFrame';
+import { ForensicReportFrame, downloadForensicReportPdf } from '@/components/ForensicReportFrame';
 import { useAnalysisSimulation } from '@/hooks/use-analysis-simulation';
 import { clearToken, getToken, isAuthError, submitFeedback, type ApiError } from '@/lib/doc-risk-api';
 import { getBasePath } from '@/lib/base-path';
@@ -214,6 +214,7 @@ export default function Home() {
     gpt: {},
   });
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
+  const [downloadingReports, setDownloadingReports] = useState<Record<string, boolean>>({});
   const [previewFile, setPreviewFile] = useState<FileResult | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [reactions, setReactions] = useState<Record<string, ReactionValue>>({});
@@ -419,6 +420,20 @@ export default function Home() {
     }));
   };
 
+  const handleDownloadReport = async (run: AnalysisRun) => {
+    setDownloadingReports((prev) => ({ ...prev, [run.id]: true }));
+    try {
+      await downloadForensicReportPdf(run, batchMetaById[run.id]);
+    } catch (error) {
+      toast({
+        title: 'PDF export failed',
+        description: error instanceof Error ? error.message : 'Unable to generate the PDF report.',
+      });
+    } finally {
+      setDownloadingReports((prev) => ({ ...prev, [run.id]: false }));
+    }
+  };
+
   const renderPanel = (panel: PanelKey, title: string, runs: AnalysisRun[]) => {
     const isLoading = panel === 'qwen' ? loading.qwen : loading.gpt;
 
@@ -492,16 +507,27 @@ export default function Home() {
                       {approveCount} Approve • {rejectCount} Reject • {manualCount} Manual
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(panel, run.id)}
-                    className="btn btn-ghost px-3 py-2 text-xs uppercase tracking-wider"
-                  >
-                    {isExpanded ? 'Collapse' : 'Expand'}
-                    <ChevronDown
-                      className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
-                    />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadReport(run)}
+                      disabled={!!downloadingReports[run.id]}
+                      className="btn btn-secondary px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-100 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" />
+                      {downloadingReports[run.id] ? 'Preparing...' : 'Download PDF'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(panel, run.id)}
+                      className="btn btn-ghost px-3 py-2 text-xs uppercase tracking-wider"
+                    >
+                      {isExpanded ? 'Collapse' : 'Expand'}
+                      <ChevronDown
+                        className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
+                      />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 flex items-center gap-2">

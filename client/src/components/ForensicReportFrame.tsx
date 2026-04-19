@@ -68,6 +68,14 @@ const reportStyles = String.raw`
     --bad: #c23b3b;
     --na: #7d8796;
     --white: #ffffff;
+    --card-teal-a: #0ea5b7;
+    --card-teal-b: #19c6bf;
+    --card-risk-a: #ff4b7d;
+    --card-risk-b: #ff315f;
+    --card-review-a: #ff9558;
+    --card-review-b: #ff6a86;
+    --card-safe-a: #14c99b;
+    --card-safe-b: #09dd72;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -84,7 +92,7 @@ const reportStyles = String.raw`
     background: var(--white);
     position: relative;
     overflow: hidden;
-    padding: 22px 24px;
+    padding: 24px 26px;
   }
   .watermark {
     position: absolute;
@@ -108,14 +116,14 @@ const reportStyles = String.raw`
     z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
   }
   .header {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
-    gap: 18px;
+    gap: 20px;
     border-bottom: 1px solid var(--line-strong);
-    padding-bottom: 14px;
+    padding-bottom: 16px;
   }
   .brand-wrap {
     display: flex;
@@ -133,29 +141,33 @@ const reportStyles = String.raw`
     justify-content: center;
     font-weight: 700;
     font-size: 24px;
+    box-shadow: 0 6px 16px rgba(18, 59, 122, 0.16);
   }
   .brand-block h1 {
     margin: 0;
-    font-size: 24px;
-    letter-spacing: 0.4px;
+    font-size: 25px;
+    letter-spacing: 0.2px;
   }
   .brand-block .sub {
-    margin-top: 4px;
+    margin-top: 6px;
     color: var(--muted);
     font-size: 12px;
-    line-height: 1.45;
+    line-height: 1.5;
+    max-width: 760px;
   }
   .meta {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     align-content: start;
+    justify-self: end !important;
+    margin-left: auto !important;
   }
   .meta-card {
     border: 1px solid var(--line);
     background: linear-gradient(180deg, #fbfdff 0%, #f3f7fb 100%);
-    border-radius: 10px;
-    padding: 10px 12px;
+    border-radius: 12px;
+    padding: 11px 13px;
   }
   .meta-label {
     font-size: 11px;
@@ -173,14 +185,14 @@ const reportStyles = String.raw`
   .summary-row {
     display: grid;
     grid-template-columns: 1.35fr .85fr .85fr .85fr;
-    gap: 12px;
+    gap: 14px;
   }
   .summary-card {
     border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 14px;
+    padding: 14px;
     background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
-    min-height: 94px;
+    min-height: 104px;
   }
   .summary-card.primary {
     background: linear-gradient(135deg, rgba(18,59,122,.98), rgba(25,139,122,.96));
@@ -192,23 +204,23 @@ const reportStyles = String.raw`
     text-transform: uppercase;
     letter-spacing: 0.5px;
     opacity: .86;
-    margin-bottom: 7px;
+    margin-bottom: 8px;
   }
   .summary-value {
-    font-size: 24px;
+    font-size: 25px;
     font-weight: 700;
     line-height: 1.05;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   .summary-note {
     font-size: 11px;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--muted);
   }
   .summary-card.primary .summary-note { color: rgba(255,255,255,.86); }
   .matrix-wrap {
     border: 1px solid var(--line-strong);
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
     background: #fff;
   }
@@ -217,13 +229,13 @@ const reportStyles = String.raw`
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     background: linear-gradient(90deg, #f1f6fb, #f8fbfe);
     border-bottom: 1px solid var(--line);
   }
   .matrix-head h2 {
     margin: 0;
-    font-size: 15px;
+    font-size: 16px;
     letter-spacing: 0.2px;
   }
   .legend {
@@ -253,17 +265,17 @@ const reportStyles = String.raw`
   .matrix-summary {
     display: grid;
     grid-template-columns: 1.15fr .95fr .95fr .95fr;
-    gap: 8px;
-    padding: 12px 14px;
+    gap: 10px;
+    padding: 14px 16px;
     background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
     border-bottom: 1px solid var(--line);
   }
   .matrix-summary-card {
     border: 1px solid var(--line);
-    border-radius: 10px;
+    border-radius: 12px;
     background: #fff;
-    padding: 10px 11px;
-    min-height: 60px;
+    padding: 12px 13px;
+    min-height: 78px;
   }
   .matrix-summary-card.primary {
     background: linear-gradient(135deg, rgba(18,59,122,.1), rgba(25,139,122,.08));
@@ -285,20 +297,28 @@ const reportStyles = String.raw`
   }
   .matrix-summary-note {
     font-size: 10px;
-    line-height: 1.35;
+    line-height: 1.4;
     color: var(--muted);
+  }
+  .matrix-summary-card:last-child .matrix-summary-value,
+  .matrix-summary-card:last-child .matrix-summary-note {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .matrix-scroll {
+    overflow-x: auto;
   }
   table.matrix {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    font-size: 11px;
+    font-size: 10.5px;
   }
   .matrix thead th {
     background: #f7fafc;
     border-bottom: 1px solid var(--line);
     border-right: 1px solid var(--line);
-    padding: 10px 6px;
+    padding: 12px 7px;
     vertical-align: bottom;
     line-height: 1.2;
   }
@@ -311,7 +331,7 @@ const reportStyles = String.raw`
   .matrix tbody th {
     border-top: 1px solid var(--line);
     border-right: 1px solid var(--line);
-    padding: 8px 6px;
+    padding: 10px 7px;
     text-align: center;
     vertical-align: middle;
   }
@@ -320,7 +340,7 @@ const reportStyles = String.raw`
     font-weight: 700;
     background: #fbfdff;
     padding-left: 14px;
-    line-height: 1.2;
+    line-height: 1.28;
   }
   .matrix tbody tr:nth-child(even) td,
   .matrix tbody tr:nth-child(even) th {
@@ -333,18 +353,18 @@ const reportStyles = String.raw`
   }
   .doc-name {
     display: block;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: var(--ink);
-    margin-bottom: 3px;
-    line-height: 1.2;
+    margin-bottom: 4px;
+    line-height: 1.24;
     word-break: break-word;
   }
   .doc-type {
     display: block;
-    font-size: 10px;
+    font-size: 9px;
     color: var(--muted);
-    line-height: 1.2;
+    line-height: 1.25;
     word-break: break-word;
   }
   .status {
@@ -366,10 +386,11 @@ const reportStyles = String.raw`
   .status.na { color: var(--na); }
   .tiny {
     display: block;
-    font-size: 10px;
+    font-size: 9.5px;
     color: var(--muted);
-    line-height: 1.2;
+    line-height: 1.32;
     word-break: break-word;
+    overflow-wrap: anywhere;
   }
   .score {
     display: inline-block;
@@ -382,16 +403,16 @@ const reportStyles = String.raw`
   .bottom {
     display: grid;
     grid-template-columns: 1.3fr 1fr;
-    gap: 12px;
+    gap: 14px;
   }
   .note-box {
     border: 1px solid var(--line);
-    border-radius: 11px;
+    border-radius: 13px;
     background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-    padding: 12px 14px;
+    padding: 14px 16px;
   }
   .note-box h3 {
-    margin: 0 0 8px 0;
+    margin: 0 0 10px 0;
     font-size: 14px;
   }
   .note-box p,
@@ -405,7 +426,7 @@ const reportStyles = String.raw`
     margin: 0;
     padding-left: 18px;
     display: grid;
-    gap: 6px;
+    gap: 7px;
   }
   .footer {
     display: flex;
@@ -419,6 +440,460 @@ const reportStyles = String.raw`
   }
   .mono {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  /* ══════════════════════════════════════════
+     REAGVIS FORENSIC REPORT — Visual Polish
+     Layout unchanged — CSS only
+  ══════════════════════════════════════════ */
+
+  /* ── Font ── */
+  body,
+  body *,
+  .page,
+  .page *,
+  .content,
+  .content * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+
+  /* ── Page background ── */
+  body {
+    background: #F8F7F5 !important;
+  }
+
+  /* ══════════════════════════════════════════
+     REPORT HEADER
+  ══════════════════════════════════════════ */
+
+  .header {
+    background: white !important;
+    border-radius: 20px !important;
+    padding: 28px 32px !important;
+    margin-bottom: 20px !important;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.05),
+      0 4px 16px rgba(0,0,0,0.06),
+      0 16px 48px rgba(0,0,0,0.05) !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+  }
+
+  .logo {
+    border-radius: 16px !important;
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.02em !important;
+    box-shadow:
+      0 4px 12px rgba(20,83,76,0.30),
+      inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  }
+
+  .brand-block h1 {
+    font-size: 26px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #0D1117 !important;
+  }
+
+  .brand-block .sub {
+    font-size: 13px !important;
+    color: #9CA3AF !important;
+    font-weight: 400 !important;
+    letter-spacing: -0.01em !important;
+    margin-top: 4px !important;
+  }
+
+  .meta-card {
+    border-radius: 14px !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    background: #F9F9F9 !important;
+    padding: 14px 18px !important;
+  }
+
+  .meta-label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    color: #C4C9D4 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .meta-value {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #111827 !important;
+    font-family: 'SF Mono', 'Fira Code', monospace !important;
+  }
+
+  /* ══════════════════════════════════════════
+     EXECUTIVE SUMMARY + STAT CARDS ROW
+  ══════════════════════════════════════════ */
+
+  .summary-row {
+    margin-bottom: 20px !important;
+    gap: 14px !important;
+  }
+
+  .summary-card.primary {
+    border-radius: 20px !important;
+    padding: 28px !important;
+    background: linear-gradient(135deg, var(--card-teal-a) 0%, var(--card-teal-b) 100%) !important;
+    box-shadow:
+      0 4px 16px rgba(14,165,183,0.30),
+      0 16px 48px rgba(25,198,191,0.22),
+      inset 0 1px 0 rgba(255,255,255,0.08) !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  .summary-card.primary::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background:
+      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 60%),
+      radial-gradient(circle at 20% 80%, rgba(0,0,0,0.10) 0%, transparent 50%) !important;
+    pointer-events: none !important;
+  }
+
+  .summary-title {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+    color: #C4C9D4 !important;
+    margin-bottom: 10px !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .summary-card.primary .summary-title {
+    color: rgba(255,255,255,0.55) !important;
+  }
+
+  .summary-card.primary .summary-value {
+    font-size: 36px !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.04em !important;
+    color: white !important;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.20) !important;
+    margin-bottom: 12px !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .summary-card.primary .summary-note {
+    font-size: 14px !important;
+    color: rgba(255,255,255,0.72) !important;
+    line-height: 1.6 !important;
+    font-weight: 400 !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .summary-card:not(.primary) {
+    border-radius: 20px !important;
+    padding: 24px !important;
+    background: white !important;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.04),
+      0 4px 16px rgba(0,0,0,0.06),
+      0 16px 48px rgba(0,0,0,0.05),
+      inset 0 1px 0 rgba(255,255,255,0.90) !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
+    transition: transform 200ms, box-shadow 200ms !important;
+  }
+
+  .summary-row .summary-card:nth-child(2) {
+    background: linear-gradient(135deg, var(--card-risk-a) 0%, var(--card-risk-b) 100%) !important;
+    border-color: transparent !important;
+    box-shadow:
+      0 4px 16px rgba(255,75,125,0.22),
+      0 16px 48px rgba(255,49,95,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.10) !important;
+  }
+
+  .summary-row .summary-card:nth-child(3) {
+    background: linear-gradient(135deg, var(--card-review-a) 0%, var(--card-review-b) 100%) !important;
+    border-color: transparent !important;
+    box-shadow:
+      0 4px 16px rgba(255,149,88,0.22),
+      0 16px 48px rgba(255,106,134,0.16),
+      inset 0 1px 0 rgba(255,255,255,0.10) !important;
+  }
+
+  .summary-row .summary-card:nth-child(4) {
+    background: linear-gradient(135deg, var(--card-safe-a) 0%, var(--card-safe-b) 100%) !important;
+    border-color: transparent !important;
+    box-shadow:
+      0 4px 16px rgba(20,201,155,0.22),
+      0 16px 48px rgba(9,221,114,0.16),
+      inset 0 1px 0 rgba(255,255,255,0.10) !important;
+  }
+
+  .summary-card:not(.primary):hover {
+    transform: translateY(-3px) !important;
+    box-shadow:
+      0 4px 16px rgba(0,0,0,0.08),
+      0 16px 48px rgba(0,0,0,0.08) !important;
+  }
+
+  .summary-card:not(.primary) .summary-title {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase !important;
+    color: rgba(255,255,255,0.75) !important;
+    margin-bottom: 10px !important;
+  }
+
+  .summary-card:not(.primary) .summary-value {
+    font-size: 42px !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.05em !important;
+    color: #ffffff !important;
+    line-height: 1 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .summary-card:not(.primary) .summary-note {
+    font-size: 12px !important;
+    color: rgba(255,255,255,0.82) !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+  }
+
+  /* ══════════════════════════════════════════
+     CROSS-VERIFICATION MATRIX SECTION
+  ══════════════════════════════════════════ */
+
+  .matrix-wrap {
+    background: white !important;
+    border-radius: 20px !important;
+    margin-bottom: 20px !important;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.04),
+      0 8px 32px rgba(0,0,0,0.06) !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+  }
+
+  .matrix-head h2 {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #0D1117 !important;
+  }
+
+  .legend {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+  }
+
+  .legend span {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: #FAFAFA !important;
+  }
+
+  /* ══════════════════════════════════════════
+     4 SUMMARY BOXES
+  ══════════════════════════════════════════ */
+
+  .matrix-summary {
+    gap: 12px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .matrix-summary-card {
+    border-radius: 16px !important;
+    padding: 20px !important;
+    background: #FAFAFA !important;
+    border: 1px solid rgba(0,0,0,0.07) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+    transition: box-shadow 180ms !important;
+  }
+
+  .matrix-summary-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+    background: white !important;
+  }
+
+  .matrix-summary-label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+    color: #C4C9D4 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .matrix-summary-value {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #111827 !important;
+    line-height: 1.4 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .matrix-summary-note {
+    font-size: 13px !important;
+    color: #6B7280 !important;
+    line-height: 1.6 !important;
+    font-weight: 400 !important;
+  }
+
+  .matrix-summary-card .matrix-summary-value,
+  .matrix-summary-card .matrix-summary-note {
+    overflow-wrap: anywhere !important;
+  }
+
+  /* ══════════════════════════════════════════
+     MAIN VERIFICATION TABLE
+  ══════════════════════════════════════════ */
+
+  table.matrix {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+  }
+
+  .matrix thead th {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+    color: #374151 !important;
+    background: #F3F4F6 !important;
+    padding: 12px 10px !important;
+    text-align: center !important;
+    border-bottom: 2px solid #E5E7EB !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+  }
+
+  .matrix tbody th {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+    letter-spacing: -0.01em !important;
+    padding: 16px 14px !important;
+    background: #FAFAFA !important;
+    border-right: 2px solid #F0F0F0 !important;
+    vertical-align: middle !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    line-height: 1.35 !important;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 1 !important;
+  }
+
+  .matrix tbody td {
+    padding: 14px 10px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #F5F5F5 !important;
+    font-size: 12px !important;
+    color: #374151 !important;
+    line-height: 1.5 !important;
+  }
+
+  .matrix tbody tr:nth-child(even) td,
+  .matrix tbody tr:nth-child(even) th {
+    background: #FDFDFD !important;
+  }
+
+  .matrix tbody tr:hover td {
+    background: #FFF8F5 !important;
+  }
+
+  .matrix tbody tr:hover th {
+    background: #FFF0E8 !important;
+    color: #C2410C !important;
+  }
+
+  .matrix thead th:not(:first-child) {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    color: #6B7280 !important;
+  }
+
+  /* ══════════════════════════════════════════
+     STATUS ICONS
+  ══════════════════════════════════════════ */
+
+  .status {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+    background: white !important;
+  }
+
+  .status.ok { color: #16A34A !important; }
+  .status.warn { color: #D97706 !important; }
+  .status.bad { color: #DC2626 !important; }
+  .status.na { color: #9CA3AF !important; }
+
+  .tiny {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    display: block !important;
+    margin-top: 4px !important;
+    line-height: 1.45 !important;
+  }
+
+  .score {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    display: block !important;
+    margin-top: 3px !important;
+  }
+
+  /* ══════════════════════════════════════════
+     DOCUMENT TYPE BADGE
+  ══════════════════════════════════════════ */
+
+  .doc-type {
+    display: inline-block !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: #9CA3AF !important;
+    letter-spacing: 0.02em !important;
+    background: #F3F4F6 !important;
+    padding: 2px 7px !important;
+    border-radius: 6px !important;
+    margin-top: 3px !important;
+  }
+
+  /* ══════════════════════════════════════════
+     PRINT / PAGE STYLES
+  ══════════════════════════════════════════ */
+  @media print {
+    body { background: white !important; }
+    .summary-card:not(.primary),
+    .matrix-wrap,
+    .matrix-summary-card,
+    .note-box,
+    .header {
+      box-shadow: none !important;
+      border: 1px solid #E5E7EB !important;
+    }
   }
 `;
 
@@ -492,7 +967,7 @@ const buildMatchCell = (
 };
 
 const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
-  const files = run.files.slice(0, 8);
+  const files = run.files.slice(0, 10);
   const overallRisk =
     typeof batchMeta?.overallRisk === 'number'
       ? Math.round(batchMeta.overallRisk)
@@ -705,9 +1180,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     })
     .join('');
 
-  const footerPolicy = batchMeta?.correlation?.confidence
-    ? `Correlation confidence ${(batchMeta.correlation.confidence * 100).toFixed(0)}%`
-    : 'Policy version not supplied by API';
+  const footerPolicy = 'RVR-POL-001';
 
   return `
     <!DOCTYPE html>
@@ -741,10 +1214,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                   <div class="meta-label">Generated On</div>
                   <div class="meta-value">${escapeHtml(formatDisplayDate(run.createdAt))}</div>
                 </div>
-                <div class="meta-card">
-                  <div class="meta-label">Batch / Case Ref</div>
-                  <div class="meta-value mono">${escapeHtml(run.runId)}</div>
-                </div>
               </div>
             </section>
 
@@ -767,7 +1236,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               <div class="summary-card">
                 <div class="summary-title">Document Count</div>
                 <div class="summary-value">${files.length}</div>
-                <div class="summary-note">Up to 8 documents are shown in the verification matrix.</div>
+                <div class="summary-note">Up to 10 documents are shown in the verification matrix.</div>
               </div>
             </section>
 
@@ -805,17 +1274,19 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                 </div>
               </div>
 
-              <table class="matrix">
-                <thead>
-                  <tr>
-                    <th>Verification Check</th>
-                    ${docHeaders}
-                  </tr>
-                </thead>
-                <tbody>
-                  ${matrixBody}
-                </tbody>
-              </table>
+              <div class="matrix-scroll">
+                <table class="matrix">
+                  <thead>
+                    <tr>
+                      <th>Verification Check</th>
+                      ${docHeaders}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${matrixBody}
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             <section class="bottom">
@@ -860,4 +1331,64 @@ export function ForensicReportFrame({ run, batchMeta }: ForensicReportFrameProps
       />
     </div>
   );
+}
+
+const buildPrintableReportElement = (run: ReportRun, batchMeta?: BatchMeta) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(buildReportHtml(run, batchMeta), 'text/html');
+  const page = doc.querySelector('.page');
+
+  if (!page) {
+    throw new Error('Unable to prepare report for PDF export.');
+  }
+
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-10000px';
+  container.style.top = '0';
+  container.style.width = '1400px';
+  container.style.background = '#ffffff';
+  container.style.zIndex = '-1';
+
+  const style = document.createElement('style');
+  style.textContent = reportStyles;
+  container.appendChild(style);
+  container.appendChild(document.importNode(page, true));
+  document.body.appendChild(container);
+
+  return container;
+};
+
+const sanitizeFileName = (value: string) =>
+  value.replace(/[^a-z0-9-_]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+
+export async function downloadForensicReportPdf(run: ReportRun, batchMeta?: BatchMeta) {
+  const container = buildPrintableReportElement(run, batchMeta);
+
+  try {
+    const html2pdfModule = await import('html2pdf.js');
+    const html2pdf = (html2pdfModule as any).default || html2pdfModule;
+    const baseName = sanitizeFileName(run.runId || run.id || 'report') || 'report';
+
+    await html2pdf()
+      .set({
+        margin: 0,
+        filename: `reagvis-forensic-report-${baseName}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'landscape',
+        },
+      })
+      .from(container)
+      .save();
+  } finally {
+    container.remove();
+  }
 }

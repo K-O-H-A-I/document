@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { NavBar } from '@/components/NavBar';
 import { KpiTiles } from '@/components/KpiTiles';
 import { MainCard } from '@/components/MainCard';
+import { ForensicReportFrame, downloadForensicReportPdf } from '@/components/ForensicReportFrame';
 import { useAnalysisSimulation } from '@/hooks/use-analysis-simulation';
 import { clearToken, getToken, isAuthError, submitFeedback, type ApiError } from '@/lib/doc-risk-api';
 import { getBasePath } from '@/lib/base-path';
@@ -213,6 +214,7 @@ export default function Home() {
     gpt: {},
   });
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
+  const [downloadingReports, setDownloadingReports] = useState<Record<string, boolean>>({});
   const [previewFile, setPreviewFile] = useState<FileResult | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [reactions, setReactions] = useState<Record<string, ReactionValue>>({});
@@ -418,6 +420,20 @@ export default function Home() {
     }));
   };
 
+  const handleDownloadReport = async (run: AnalysisRun) => {
+    setDownloadingReports((prev) => ({ ...prev, [run.id]: true }));
+    try {
+      await downloadForensicReportPdf(run, batchMetaById[run.id]);
+    } catch (error) {
+      toast({
+        title: 'PDF export failed',
+        description: error instanceof Error ? error.message : 'Unable to generate the PDF report.',
+      });
+    } finally {
+      setDownloadingReports((prev) => ({ ...prev, [run.id]: false }));
+    }
+  };
+
   const renderPanel = (panel: PanelKey, title: string, runs: AnalysisRun[]) => {
     const isLoading = panel === 'qwen' ? loading.qwen : loading.gpt;
 
@@ -491,16 +507,27 @@ export default function Home() {
                       {approveCount} Approve • {rejectCount} Reject • {manualCount} Manual
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(panel, run.id)}
-                    className="btn btn-ghost px-3 py-2 text-xs uppercase tracking-wider"
-                  >
-                    {isExpanded ? 'Collapse' : 'Expand'}
-                    <ChevronDown
-                      className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
-                    />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadReport(run)}
+                      disabled={!!downloadingReports[run.id]}
+                      className="btn btn-secondary px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-100 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" />
+                      {downloadingReports[run.id] ? 'Preparing...' : 'Download PDF'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(panel, run.id)}
+                      className="btn btn-ghost px-3 py-2 text-xs uppercase tracking-wider"
+                    >
+                      {isExpanded ? 'Collapse' : 'Expand'}
+                      <ChevronDown
+                        className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
+                      />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 flex items-center gap-2">
@@ -620,122 +647,12 @@ export default function Home() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="mt-4 grid gap-3">
-                {batchMetaById[run.id] && (
-                  <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/60 p-4">
-                    <div className="text-xs text-[var(--muted)] uppercase tracking-wider font-semibold">
-                      Batch Summary
-                    </div>
-                    <div className="mt-2 grid gap-2 text-sm text-[var(--text)]">
-                      {typeof batchMetaById[run.id].overallRisk === "number" && (
-                        <div>Overall batch risk: {batchMetaById[run.id].overallRisk}%</div>
-                      )}
-                      {typeof batchMetaById[run.id].identitySimilarity === "number" && (
-                        <div>Identity similarity: {batchMetaById[run.id].identitySimilarity}</div>
-                      )}
-                      {batchMetaById[run.id].correlation?.conclusion && (
-                        <div>{batchMetaById[run.id].correlation?.conclusion}</div>
-                      )}
-                      {batchMetaById[run.id].correlation?.story && (
-                        <div className="text-xs text-[var(--muted)] whitespace-pre-line">
-                          {batchMetaById[run.id].correlation?.story}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {(Array.isArray(run.files) ? run.files : []).map((file) => (
-                  <div
-                    key={`${file.id}-detail`}
-                    className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/60 p-4"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <div className="text-sm font-semibold text-[var(--text)] truncate" title={file.name}>
-                                  {file.name}
-                                </div>
-                                <div className="text-[11px] text-[var(--muted)]">
-                                  {file.isPdf ? 'PDF' : 'Image'} • {file.sizeLabel} • Verdict: {file.verdict}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-[var(--text)]">{file.riskScore}%</div>
-                                <div
-                                  className={cn(
-                                    'text-[11px] font-bold uppercase',
-                                    decisionTextClass[getEffectiveDecision(file)]
-                                  )}
-                                >
-                                  {decisionLabel[getEffectiveDecision(file)]}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="mt-2 text-xs text-[var(--muted)]">
-                              {file.summary || 'Summary unavailable.'}
-                            </div>
-                            {file.identity && (
-                              <div className="mt-3 text-xs text-[var(--muted)] space-y-1">
-                                {file.identity.name && <div>Name: {file.identity.name}</div>}
-                                {file.identity.dob && <div>DOB: {file.identity.dob}</div>}
-                                {file.identity.address && <div>Address: {file.identity.address}</div>}
-                              </div>
-                            )}
-                            <div className="mt-4 flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleReactionClick(file, 'like')}
-                                className={cn(
-                                  'inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
-                                  reactions[file.id] === 'like'
-                                    ? 'border-[var(--ok)]/40 bg-[var(--ok)]/10 text-[var(--ok)]'
-                                    : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
-                                )}
-                              >
-                                <ThumbsUp className="w-3.5 h-3.5" />
-                                Like
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleReactionClick(file, 'dislike')}
-                                className={cn(
-                                  'inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
-                                  reactions[file.id] === 'dislike'
-                                    ? 'border-[var(--danger)]/40 bg-[var(--danger)]/10 text-[var(--danger)]'
-                                    : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
-                                )}
-                              >
-                                <ThumbsDown className="w-3.5 h-3.5" />
-                                Dislike
-                              </button>
-                              {(getEffectiveDecision(file) === 'REJECT' ||
-                                getEffectiveDecision(file) === 'MANUAL_REVIEW') && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDecisionClick(file, 'APPROVE')}
-                                  className="inline-flex items-center gap-1 rounded-full border border-[var(--ok)]/35 px-3 py-1.5 text-xs font-semibold text-[var(--ok)] transition-colors hover:bg-[var(--ok)]/15"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                  Accept
-                                </button>
-                              )}
-                              {(getEffectiveDecision(file) === 'APPROVE' ||
-                                getEffectiveDecision(file) === 'MANUAL_REVIEW') && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDecisionClick(file, 'REJECT')}
-                                  className="inline-flex items-center gap-1 rounded-full border border-[var(--danger)]/35 px-3 py-1.5 text-xs font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger)]/15"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                  Reject
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+              <div className="mt-4">
+                <ForensicReportFrame run={run} batchMeta={batchMetaById[run.id]} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
               </div>
             );
           })}

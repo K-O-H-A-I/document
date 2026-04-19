@@ -201,14 +201,18 @@ const extFromFile = (file: File) => {
 
 export const getUploadUrl = async (token: string, file: File) => {
   const ext = extFromFile(file) || "png";
-  return postJson<UploadUrlResponse>("/get-upload-url", { ext }, token);
+  return postJson<UploadUrlResponse>(
+    "/get-upload-url",
+    { ext, contentType: file.type || undefined },
+    token
+  );
 };
 
-export const uploadFile = async (uploadUrl: string, file: File) => {
+export const uploadFile = async (uploadUrl: string, file: File, contentType?: string) => {
   const res = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
-      "Content-Type": file.type || "image/png",
+      "Content-Type": contentType || file.type || "application/octet-stream",
     },
     body: file,
   });

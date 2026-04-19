@@ -1136,7 +1136,7 @@ export function useAnalysisSimulation() {
           for (let index = 0; index < files.length; index += 1) {
             const file = files[index];
             const uploadInfo = await getUploadUrl(token, file);
-            await uploadFile(uploadInfo.upload_url, file);
+            await uploadFile(uploadInfo.upload_url, file, uploadInfo.contentType);
             uploads.push({ file, key: uploadInfo.key });
             if (index < files.length - 1) {
               await sleep(DOCUMENT_UPLOAD_DELAY_MS);

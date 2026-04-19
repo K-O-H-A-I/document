@@ -12,13 +12,6 @@ type UploadUrlResponse = {
   contentType?: string;
 };
 
-type AnalyzeResponse = {
-  risk_score: number;
-  summary?: string;
-  tokens_used?: number;
-  cost_incurred?: number;
-};
-
 type BatchAnalyzeResponse = {
   files: Array<{
     key: string;
@@ -43,14 +36,37 @@ type BatchAnalyzeResponse = {
 
 type BatchSubmitResponse = {
   job_id: string;
+  case_id?: string;
   status: string;
 };
 
 type BatchJobStatusResponse = {
   job_id: string;
+  case_id?: string;
   status: string;
   error?: string;
   result?: BatchAnalyzeResponse;
+  final_verdict?: {
+    risk?: string;
+    verdict?: string;
+    confidence?: number;
+    summary?: string;
+    per_doc_verdicts?: Array<{
+      doc?: string;
+      verdict?: string;
+      confidence?: number;
+      key_flag?: string;
+    }>;
+  };
+  result_summary?: {
+    verdict?: string;
+    risk?: string;
+    confidence?: number;
+    summary?: string;
+  };
+  final_verdict_key?: string;
+  current_stage?: string;
+  percent_estimate?: number;
 };
 
 type FeedbackReaction = {
@@ -202,12 +218,8 @@ export const uploadFile = async (uploadUrl: string, file: File) => {
   }
 };
 
-export const analyzeDocument = async (token: string, key: string) => {
-  return postJson<AnalyzeResponse>("/analyze", { key }, token);
-};
-
 export const analyzeBatch = async (token: string, files: Array<{ key: string }>) => {
-  return postJson<BatchAnalyzeResponse>("/batch-analyze", { files }, token);
+  return postJson<BatchSubmitResponse | BatchAnalyzeResponse>("/batch-analyze", { files }, token);
 };
 
 export const submitBatchAnalysis = async (token: string, files: Array<{ key: string }>) => {
@@ -257,7 +269,6 @@ export type {
   ApiError,
   StatsResponse,
   HistoryItem,
-  AnalyzeResponse,
   BatchAnalyzeResponse,
   BatchSubmitResponse,
   BatchJobStatusResponse,

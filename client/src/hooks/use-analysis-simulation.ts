@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import type { ToolType, AnalysisResult, KpiStats } from '@shared/schema';
 import {
-  analyzeDocument as apiAnalyzeDocument,
   analyzeBatch as apiAnalyzeBatch,
   fetchBatchJobStatus,
   fetchHistory,
@@ -39,11 +39,18 @@ type BatchMeta = {
   identitySimilarity?: number;
   tokensUsed?: number;
   costIncurred?: number;
+  verdict?: string;
+  risk?: string;
   correlation?: {
     conclusion?: string;
     confidence?: number;
     story?: string;
   };
+};
+
+type UploadedDocument = {
+  file: File;
+  key: string;
 };
 
 const DEFAULT_MEDIA_API_BASE = "https://d1hj0828nk37mv.cloudfront.net";
@@ -109,7 +116,6 @@ const MEDIA_API_KEY_RAW = String(
 const MEDIA_API_KEY = formatBearerKey(MEDIA_API_KEY_RAW);
 const DOCUMENT_API_URL = DEFAULT_DOCUMENT_UPLOAD_URL.trim();
 const DOCUMENT_API_BASE = DOCUMENT_API_URL.replace(/\/get-upload-url\/?$/, "");
-const DOCUMENT_ANALYZE_URL = `${DOCUMENT_API_BASE}/analyze`;
 const DOCUMENT_API_KEY = "";
 const PHASE_MESSAGES = [
   "Analyzing document structure…",
@@ -195,23 +201,6 @@ const requestDocumentPresign = async (file: File) => {
     key: key as string,
     contentType: "image/png",
   };
-};
-
-const analyzeDocument = async (bucket: string, key: string) => {
-  const res = await fetch(DOCUMENT_ANALYZE_URL, {
-    method: "POST",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }, DOCUMENT_API_KEY),
-    body: JSON.stringify({ bucket, key }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(
-      `Document analysis failed (${res.status}): ${(data as any).error || res.statusText}`
-    );
-  }
-
-  return data as any;
 };
 
 const getApiConfig = (toolType: ToolType) => {
@@ -837,6 +826,111 @@ const mapRiskToDecision = (riskScore: number) => {
   return { priority: "LOW", decision: "APPROVE" } as const;
 };
 
+const riskLabelToScore = (risk?: string) => {
+  const normalized = String(risk || "").toUpperCase();
+  if (normalized === "CRITICAL") return 95;
+  if (normalized === "HIGH") return 85;
+  if (normalized === "MEDIUM") return 55;
+  if (normalized === "LOW") return 15;
+  return 50;
+};
+
+const verdictToRiskScore = (verdict?: string, fallbackRisk?: string) => {
+  const normalized = String(verdict || "").toUpperCase();
+  if (normalized.includes("LIKELY_FAKE") || normalized.includes("FAKE")) return 88;
+  if (normalized.includes("SUSPICIOUS")) return 58;
+  if (normalized.includes("INSUFFICIENT")) return 60;
+  if (normalized.includes("AUTHENTIC")) return 15;
+  return riskLabelToScore(fallbackRisk);
+};
+
+const buildResultsFromBatchResponse = (
+  batchResponse: any,
+  keyToFile: Map<string, File>,
+  batchId: string,
+  now: number,
+  nextIdRef: MutableRefObject<number>
+) => {
+  const files = Array.isArray(batchResponse?.files) ? batchResponse.files : [];
+  return files.map((item: any) => {
+    const file = keyToFile.get(item.key);
+    const riskScore = Math.max(0, Math.min(100, Math.round(item.risk_score || 50)));
+    const { priority, decision } = mapRiskToDecision(riskScore);
+    const previewUrl = file ? URL.createObjectURL(file) : null;
+    return {
+      id: nextIdRef.current++,
+      filename: file?.name || item.key,
+      toolType: "document",
+      riskScore,
+      priority,
+      decision,
+      evidence: [`Risk score: ${riskScore}`],
+      summary: "Batch analysis completed.",
+      batchId,
+      storageKey: item.key,
+      actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+      timestamp: new Date(now),
+      previewUrl,
+      previewUrls: null,
+      identity: item.identity || null,
+      metadata: null,
+      geolocation: null,
+    } satisfies AnalysisResult;
+  });
+};
+
+const buildResultsFromCaseJob = (
+  jobResult: any,
+  uploads: UploadedDocument[],
+  batchId: string,
+  now: number,
+  nextIdRef: MutableRefObject<number>
+) => {
+  const finalVerdict = jobResult?.final_verdict || jobResult?.result?.final_verdict || {};
+  const resultSummary = jobResult?.result_summary || {};
+  const perDocVerdicts = Array.isArray(finalVerdict?.per_doc_verdicts)
+    ? finalVerdict.per_doc_verdicts
+    : [];
+  const overallVerdict = String(finalVerdict?.verdict || resultSummary?.verdict || "");
+  const overallRisk = String(finalVerdict?.risk || resultSummary?.risk || "");
+  const fallbackRiskScore = verdictToRiskScore(overallVerdict, overallRisk);
+  const summary = String(finalVerdict?.summary || resultSummary?.summary || "Case analysis completed.");
+
+  return uploads.map((upload, index) => {
+    const docVerdict = perDocVerdicts[index] || {};
+    const docRiskScore = docVerdict?.verdict
+      ? verdictToRiskScore(String(docVerdict.verdict), overallRisk)
+      : fallbackRiskScore;
+    const riskScore = Math.max(0, Math.min(100, Math.round(docRiskScore)));
+    const { priority, decision } = mapRiskToDecision(riskScore);
+    const evidence = [
+      docVerdict?.verdict ? `Document verdict: ${docVerdict.verdict}` : `Case verdict: ${overallVerdict || "Completed"}`,
+      docVerdict?.key_flag ? `Key flag: ${docVerdict.key_flag}` : "",
+      `Risk: ${overallRisk || riskScore}`,
+    ].filter(Boolean);
+
+    return {
+      id: nextIdRef.current++,
+      filename: upload.file.name,
+      toolType: "document",
+      riskScore,
+      priority,
+      decision,
+      evidence,
+      summary,
+      batchId,
+      storageKey: upload.key,
+      actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
+      timestamp: new Date(now),
+      previewUrl: URL.createObjectURL(upload.file),
+      previewUrls: null,
+      identity: null,
+      metadata: null,
+      geolocation: null,
+    } satisfies AnalysisResult;
+  });
+};
+
 const mapHistoryToResults = (history: HistoryItem[]): AnalysisResult[] => {
   return history.map((item, index) => {
     const riskSource =
@@ -1037,7 +1131,7 @@ export function useAnalysisSimulation() {
         };
 
         try {
-          const uploads: Array<{ file: File; key: string }> = [];
+          const uploads: UploadedDocument[] = [];
           setToastMessage(DOCUMENT_BATCH_PHASES.uploading);
           for (let index = 0; index < files.length; index += 1) {
             const file = files[index];
@@ -1053,139 +1147,131 @@ export function useAnalysisSimulation() {
           const now = Date.now();
           let newResults: AnalysisResult[] = [];
 
-          if (uploads.length > 1) {
-            setToastMessage(DOCUMENT_BATCH_PHASES.submitting);
-            let batchResponse;
-            try {
-              const submitted = await submitBatchAnalysis(
-                token,
-                uploads.map((item) => ({ key: item.key }))
-              );
+          setToastMessage(DOCUMENT_BATCH_PHASES.submitting);
+          const payload = uploads.map((item) => ({ key: item.key }));
+          let submitted: { job_id: string; case_id?: string; status: string } | null = null;
+          let directBatchResponse: any = null;
 
-              let jobResult = null as Awaited<ReturnType<typeof fetchBatchJobStatus>> | null;
-              for (let attempt = 0; attempt < DOCUMENT_BATCH_MAX_POLLS; attempt += 1) {
-                const polled = await fetchBatchJobStatus(token, submitted.job_id);
-                const status = String(polled.status || "").toUpperCase();
+          try {
+            submitted = await submitBatchAnalysis(token, payload);
+          } catch (error) {
+            const err = error as ApiError;
+            const isMissingAsyncRoute =
+              err?.status === 404 ||
+              String(err?.message || "").toLowerCase().includes("unknown route");
 
-                if (status === "QUEUED") {
-                  setToastMessage(DOCUMENT_BATCH_PHASES.queued);
-                } else if (status === "PROCESSING") {
-                  setToastMessage(
-                    attempt >= 1 ? DOCUMENT_BATCH_PHASES.correlating : DOCUMENT_BATCH_PHASES.processing
-                  );
-                } else if (status === "COMPLETED") {
-                  jobResult = polled;
-                  break;
-                } else if (status === "FAILED") {
-                  throw {
-                    status: 500,
-                    message: polled.error || "Batch analysis failed.",
-                  } as ApiError;
-                }
+            if (!isMissingAsyncRoute) {
+              throw err;
+            }
 
-                await sleep(DOCUMENT_BATCH_POLL_INTERVAL_MS);
-              }
+            const fallbackResponse = await apiAnalyzeBatch(token, payload);
+            if ((fallbackResponse as any)?.job_id) {
+              submitted = fallbackResponse as { job_id: string; case_id?: string; status: string };
+            } else {
+              directBatchResponse = fallbackResponse;
+            }
+          }
 
-              if (!jobResult?.result) {
+          if (directBatchResponse) {
+            newResults = buildResultsFromBatchResponse(
+              directBatchResponse,
+              keyToFile,
+              batchId,
+              now,
+              nextIdRef
+            );
+
+            const meta: BatchMeta = {
+              overallRisk: directBatchResponse.overall_batch_risk,
+              identitySimilarity: directBatchResponse.identity_similarity,
+              tokensUsed: directBatchResponse.tokens_used,
+              costIncurred: directBatchResponse.cost_incurred,
+              correlation: directBatchResponse.correlation,
+            };
+            setBatchMetaById((prev) => ({ ...prev, [batchId]: meta }));
+          } else if (submitted?.job_id) {
+            let jobResult = null as Awaited<ReturnType<typeof fetchBatchJobStatus>> | null;
+            for (let attempt = 0; attempt < DOCUMENT_BATCH_MAX_POLLS; attempt += 1) {
+              const polled = await fetchBatchJobStatus(token, submitted.job_id);
+              const status = String(polled.status || "").toUpperCase();
+
+              if (status === "QUEUED") {
+                setToastMessage(DOCUMENT_BATCH_PHASES.queued);
+              } else if (
+                [
+                  "PROCESSING",
+                  "PREPARING",
+                  "BATCHING",
+                  "RUNNING_PROMPT1",
+                  "RUN_PROMPT1_BATCH",
+                ].includes(status)
+              ) {
+                setToastMessage(DOCUMENT_BATCH_PHASES.processing);
+              } else if (["CONSOLIDATING", "RUNNING_PROMPT2"].includes(status)) {
+                setToastMessage(DOCUMENT_BATCH_PHASES.correlating);
+              } else if (status === "COMPLETED" || status === "COMPLETED_WITH_WARNINGS") {
+                jobResult = polled;
+                break;
+              } else if (status === "FAILED") {
                 throw {
                   status: 500,
-                  message: "Batch analysis timed out before completion.",
+                  message: polled.error || "Batch analysis failed.",
                 } as ApiError;
               }
 
-              batchResponse = jobResult.result;
-            } catch (error) {
-              const err = error as ApiError;
-              const isMissingAsyncRoute =
-                err?.status === 404 ||
-                String(err?.message || "").toLowerCase().includes("unknown route");
-
-              if (!isMissingAsyncRoute) {
-                throw err;
-              }
-
-              batchResponse = await apiAnalyzeBatch(
-                token,
-                uploads.map((item) => ({ key: item.key }))
-              );
+              await sleep(DOCUMENT_BATCH_POLL_INTERVAL_MS);
             }
 
-            newResults = batchResponse.files.map((item) => {
-              const file = keyToFile.get(item.key);
-              const riskScore = Math.max(0, Math.min(100, Math.round(item.risk_score || 50)));
-              const { priority, decision } = mapRiskToDecision(riskScore);
-              const previewUrl = file ? URL.createObjectURL(file) : undefined;
-              return {
-                id: nextIdRef.current++,
-                filename: file?.name || item.key,
-                toolType: "document",
-                riskScore,
-                priority,
-                decision,
-                evidence: [`Risk score: ${riskScore}`],
-                summary: "Batch analysis completed.",
-                batchId,
-                storageKey: item.key,
-                actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
-                timestamp: new Date(now),
-                previewUrl,
-                previewUrls: null,
-                identity: item.identity || null,
-                metadata: null,
-                geolocation: null,
-              };
-            });
+            if (!jobResult?.result && !jobResult?.final_verdict && !jobResult?.result_summary) {
+              throw {
+                status: 500,
+                message: "Batch analysis timed out before completion.",
+              } as ApiError;
+            }
 
-            const meta: BatchMeta = {
-              overallRisk: batchResponse.overall_batch_risk,
-              identitySimilarity: batchResponse.identity_similarity,
-              tokensUsed: batchResponse.tokens_used,
-              costIncurred: batchResponse.cost_incurred,
-              correlation: batchResponse.correlation,
-            };
-            setBatchMetaById((prev) => ({ ...prev, [batchId]: meta }));
-          } else {
-            const upload = uploads[0];
-            const analysis = await apiAnalyzeDocument(token, upload.key);
-            const summary = extractSummary(analysis) || "Summary unavailable.";
-            const riskScoreRaw =
-              typeof analysis.risk_score === "number"
-                ? analysis.risk_score
-                : typeof analysis.riskScore === "number"
-                  ? analysis.riskScore
-                  : 50;
-            const riskScore = Math.max(0, Math.min(100, Math.round(riskScoreRaw)));
-            const { priority, decision } = mapRiskToDecision(riskScore);
-            const previewUrl = URL.createObjectURL(upload.file);
-            newResults = [
-              {
-                id: nextIdRef.current++,
-                filename: upload.file.name,
-                toolType: "document",
-                riskScore,
-                priority,
-                decision,
-                evidence: [`Risk score: ${riskScore}`],
-                summary,
+            if (jobResult.result?.files) {
+              newResults = buildResultsFromBatchResponse(
+                jobResult.result,
+                keyToFile,
                 batchId,
-                storageKey: upload.key,
-                actionRequired: decision === "MANUAL_REVIEW" ? "Manual Review" : null,
-                timestamp: new Date(now),
-                previewUrl,
-                previewUrls: null,
-                identity: null,
-                metadata: null,
-                geolocation: null,
-              },
-            ];
+                now,
+                nextIdRef
+              );
 
-            setBatchMetaById((prev) => ({
-              ...prev,
-              [batchId]: {
-                tokensUsed: analysis.tokens_used,
-                costIncurred: analysis.cost_incurred,
-              },
-            }));
+              setBatchMetaById((prev) => ({
+                ...prev,
+                [batchId]: {
+                  overallRisk: jobResult.result?.overall_batch_risk,
+                  identitySimilarity: jobResult.result?.identity_similarity,
+                  tokensUsed: jobResult.result?.tokens_used,
+                  costIncurred: jobResult.result?.cost_incurred,
+                  correlation: jobResult.result?.correlation,
+                },
+              }));
+            } else {
+              newResults = buildResultsFromCaseJob(jobResult, uploads, batchId, now, nextIdRef);
+
+              const finalVerdict = jobResult.final_verdict || {};
+              const resultSummary = jobResult.result_summary || {};
+              setBatchMetaById((prev) => ({
+                ...prev,
+                [batchId]: {
+                  overallRisk: verdictToRiskScore(
+                    finalVerdict.verdict || resultSummary.verdict,
+                    finalVerdict.risk || resultSummary.risk
+                  ),
+                  verdict: finalVerdict.verdict || resultSummary.verdict,
+                  risk: finalVerdict.risk || resultSummary.risk,
+                  tokensUsed: (jobResult as any).tokens_used,
+                  costIncurred: (jobResult as any).cost_incurred,
+                  correlation: {
+                    conclusion: finalVerdict.verdict || resultSummary.verdict,
+                    confidence: finalVerdict.confidence || resultSummary.confidence,
+                    story: finalVerdict.summary || resultSummary.summary,
+                  },
+                },
+              }));
+            }
           }
 
           const elapsed = Date.now() - start;

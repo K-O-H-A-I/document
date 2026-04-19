@@ -157,7 +157,7 @@ const reportStyles = String.raw`
   }
   .meta {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(146px, 1fr));
     gap: 10px;
     align-content: start;
     justify-self: end !important;
@@ -468,6 +468,8 @@ const reportStyles = String.raw`
   ══════════════════════════════════════════ */
 
   .header {
+    grid-template-columns: minmax(0, 1fr) minmax(500px, 560px) !important;
+    align-items: start !important;
     background: white !important;
     border-radius: 20px !important;
     padding: 28px 32px !important;
@@ -477,6 +479,14 @@ const reportStyles = String.raw`
       0 4px 16px rgba(0,0,0,0.06),
       0 16px 48px rgba(0,0,0,0.05) !important;
     border: 1px solid rgba(0,0,0,0.06) !important;
+  }
+
+  .meta {
+    grid-template-columns: repeat(2, minmax(220px, 1fr)) !important;
+    width: 100% !important;
+    max-width: 560px !important;
+    justify-self: stretch !important;
+    margin-left: 0 !important;
   }
 
   .logo {
@@ -505,27 +515,46 @@ const reportStyles = String.raw`
   }
 
   .meta-card {
-    border-radius: 14px !important;
-    border: 1px solid rgba(0,0,0,0.08) !important;
-    background: #F9F9F9 !important;
-    padding: 14px 18px !important;
+    position: relative !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(130, 146, 174, 0.22) !important;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,248,252,0.96) 100%) !important;
+    padding: 16px 18px !important;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 10px 24px rgba(148, 163, 184, 0.14),
+      inset 0 1px 0 rgba(255,255,255,0.92) !important;
+    overflow: hidden !important;
+  }
+
+  .meta-card::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 0 auto 0 !important;
+    height: 3px !important;
+    background: linear-gradient(90deg, #17b9c0 0%, #ff6c88 100%) !important;
+    opacity: 0.9 !important;
   }
 
   .meta-label {
     font-size: 10px !important;
     font-weight: 800 !important;
-    letter-spacing: 0.12em !important;
+    letter-spacing: 0.16em !important;
     text-transform: uppercase !important;
-    color: #C4C9D4 !important;
-    margin-bottom: 6px !important;
+    color: #B8C2D3 !important;
+    margin-bottom: 10px !important;
+    line-height: 1.35 !important;
   }
 
   .meta-value {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.02em !important;
-    color: #111827 !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #0F172A !important;
+    line-height: 1.45 !important;
     font-family: 'SF Mono', 'Fira Code', monospace !important;
+    text-wrap: balance !important;
   }
 
   /* ══════════════════════════════════════════
@@ -664,6 +693,167 @@ const reportStyles = String.raw`
     color: rgba(255,255,255,0.82) !important;
     font-weight: 400 !important;
     line-height: 1.5 !important;
+  }
+
+  .subject-section,
+  .issue-section,
+  .closing-summary {
+    background: white !important;
+    border-radius: 20px !important;
+    padding: 24px 28px !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.04),
+      0 8px 32px rgba(0,0,0,0.06) !important;
+  }
+
+  .section-heading {
+    margin: 0 0 14px 0 !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #0D1117 !important;
+  }
+
+  .section-subcopy {
+    margin: -6px 0 18px 0 !important;
+    font-size: 13px !important;
+    color: #9CA3AF !important;
+    line-height: 1.55 !important;
+  }
+
+  .subject-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .subject-card,
+  .issue-card,
+  .issue-list,
+  .closing-panel {
+    border-radius: 16px !important;
+    padding: 18px 20px !important;
+    background: #FAFAFA !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+  }
+
+  .subject-label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+    color: #C4C9D4 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .subject-value {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #111827 !important;
+    line-height: 1.35 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .subject-note {
+    margin-top: 6px !important;
+    font-size: 12px !important;
+    color: #6B7280 !important;
+    line-height: 1.45 !important;
+  }
+
+  .issue-grid,
+  .closing-summary-grid {
+    display: grid !important;
+    gap: 14px !important;
+  }
+
+  .issue-grid {
+    grid-template-columns: 1.05fr 1.95fr !important;
+  }
+
+  .closing-summary-grid {
+    grid-template-columns: 1.2fr .8fr !important;
+    align-items: start !important;
+  }
+
+  .issue-card {
+    background: linear-gradient(135deg, #fff5f7 0%, #fff0f3 100%) !important;
+  }
+
+  .issue-card.ok {
+    background: linear-gradient(135deg, #f1fdf8 0%, #ebfbf4 100%) !important;
+  }
+
+  .issue-card.warn {
+    background: linear-gradient(135deg, #fff7ef 0%, #fff1e5 100%) !important;
+  }
+
+  .issue-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border-radius: 999px !important;
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 12px !important;
+    background: rgba(220,38,38,0.10) !important;
+    color: #DC2626 !important;
+  }
+
+  .issue-card.ok .issue-badge {
+    background: rgba(22,163,74,0.10) !important;
+    color: #16A34A !important;
+  }
+
+  .issue-card.warn .issue-badge {
+    background: rgba(217,119,6,0.10) !important;
+    color: #D97706 !important;
+  }
+
+  .issue-title {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #111827 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .issue-copy,
+  .closing-panel p {
+    font-size: 13px !important;
+    color: #6B7280 !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+  }
+
+  .issue-list h4,
+  .closing-summary h4 {
+    margin: 0 0 10px 0 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    color: #111827 !important;
+  }
+
+  .issue-list ul,
+  .closing-summary ul {
+    margin: 0 !important;
+    padding-left: 18px !important;
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .issue-list li,
+  .closing-summary li {
+    font-size: 13px !important;
+    color: #374151 !important;
+    line-height: 1.55 !important;
   }
 
   /* ══════════════════════════════════════════
@@ -987,6 +1177,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
   const canonicalName = collectComparableValue(files, (file) => file.identity?.name);
   const canonicalDob = collectComparableValue(files, (file) => file.identity?.dob);
   const canonicalAddress = collectComparableValue(files, (file) => file.identity?.address);
+  const subjectDocuments = files.map((file) => file.name).join(', ');
 
   const executiveSummary =
     run.overallDecision === 'REJECT'
@@ -1004,6 +1195,68 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     .filter((file) => file.decision !== 'APPROVE')
     .map((file) => `${file.name}: ${verdictText(file.decision)}`)
     .join('; ') || 'No material exceptions flagged.';
+
+  const subjectDetails = [
+    {
+      label: 'Name',
+      value: canonicalName || 'Not available',
+      note: canonicalName
+        ? 'Primary identity inferred from the strongest matching documents.'
+        : 'No stable name could be extracted from the returned payload.',
+    },
+    {
+      label: 'DOB',
+      value: canonicalDob || 'Not available',
+      note: canonicalDob
+        ? 'Cross-document DOB reference used in correlation checks.'
+        : 'DOB was not consistently returned across the uploaded documents.',
+    },
+    {
+      label: 'Address',
+      value: canonicalAddress || 'Not available',
+      note: canonicalAddress
+        ? 'Most consistent address observed across the available records.'
+        : 'Address details were partial or missing in the returned analysis data.',
+    },
+    {
+      label: 'Documents Submitted',
+      value: String(files.length),
+      note: subjectDocuments || 'No document names available.',
+    },
+  ];
+
+  const issueSummary =
+    run.overallDecision === 'REJECT'
+      ? {
+          statusClass: 'risk',
+          badge: 'Issue Found',
+          title: 'Yes, there are material issues in this batch.',
+          copy: 'One or more uploaded documents carry rejection-level risk. The batch should not pass KYC verification until the flagged records are validated externally or replaced.',
+        }
+      : run.overallDecision === 'MANUAL_REVIEW'
+        ? {
+            statusClass: 'warn',
+            badge: 'Needs Review',
+            title: 'There are concerns that still need analyst review.',
+            copy: 'The current batch is not outright rejected, but it contains enough ambiguity that it should be held for manual KYC verification before approval.',
+          }
+        : {
+            statusClass: 'ok',
+            badge: 'No Major Issue',
+            title: 'No major issues were detected in the current batch.',
+            copy: 'The uploaded documents are broadly aligned with each other and do not show material risk requiring escalation based on the returned analysis payload.',
+          };
+
+  const issueBullets = files
+    .filter((file) => file.decision !== 'APPROVE')
+    .map((file) => `${file.name}: ${file.summary?.trim() || verdictText(file.decision)}`);
+
+  const finalSummaryBullets = [
+    `Primary subject details used for review: ${canonicalName || 'name unavailable'}, ${canonicalDob || 'DOB unavailable'}, ${canonicalAddress || 'address unavailable'}.`,
+    `KYC outcome for this batch: ${verdictText(run.overallDecision)}.`,
+    `Highest-risk note: ${exceptionSummary}`,
+    `Recommended next step: ${executiveSummary}`,
+  ];
 
   const rowBuilders: Array<{ label: string; build: (file: ReportFile) => MatrixCell }> = [
     {
@@ -1240,6 +1493,46 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               </div>
             </section>
 
+            <section class="subject-section">
+              <h2 class="section-heading">Subject Details</h2>
+              <p class="section-subcopy">Primary KYC details inferred from the uploaded documents for the person under verification.</p>
+              <div class="subject-grid">
+                ${subjectDetails
+                  .map(
+                    (item) => `
+                      <div class="subject-card">
+                        <div class="subject-label">${escapeHtml(item.label)}</div>
+                        <div class="subject-value">${escapeHtml(item.value)}</div>
+                        <div class="subject-note">${escapeHtml(item.note)}</div>
+                      </div>
+                    `
+                  )
+                  .join('')}
+              </div>
+            </section>
+
+            <section class="issue-section">
+              <h2 class="section-heading">Issue Check</h2>
+              <p class="section-subcopy">A quick KYC-style reading of whether anything is materially wrong in the current batch.</p>
+              <div class="issue-grid">
+                <div class="issue-card ${escapeHtml(issueSummary.statusClass)}">
+                  <div class="issue-badge">${escapeHtml(issueSummary.badge)}</div>
+                  <div class="issue-title">${escapeHtml(issueSummary.title)}</div>
+                  <div class="issue-copy">${escapeHtml(issueSummary.copy)}</div>
+                </div>
+                <div class="issue-list">
+                  <h4>What was flagged</h4>
+                  <ul>
+                    ${
+                      issueBullets.length > 0
+                        ? issueBullets.map((item) => `<li>${escapeHtml(item)}</li>`).join('')
+                        : '<li>No material issue was flagged in the current payload.</li>'
+                    }
+                  </ul>
+                </div>
+              </div>
+            </section>
+
             <section class="matrix-wrap">
               <div class="matrix-head">
                 <h2>Cross-Verification Matrix</h2>
@@ -1305,6 +1598,24 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                 <h3>Analyst / Model Notes</h3>
                 <p>${escapeHtml(analystNotes || 'No additional model narrative was returned for this batch.')}</p>
                 <p style="margin-top: 10px;"><strong>Recommendation:</strong> ${escapeHtml(executiveSummary)}</p>
+              </div>
+            </section>
+
+            <section class="closing-summary">
+              <h2 class="section-heading">Final KYC Summary</h2>
+              <p class="section-subcopy">High-level takeaways placed at the end of the report for quick reviewer sign-off.</p>
+              <div class="closing-summary-grid">
+                <div class="closing-panel">
+                  <h4>Summary</h4>
+                  <ul>
+                    ${finalSummaryBullets.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+                  </ul>
+                </div>
+                <div class="closing-panel">
+                  <h4>Decision</h4>
+                  <p><strong>${escapeHtml(verdictText(run.overallDecision))}</strong></p>
+                  <p style="margin-top: 10px;">${escapeHtml(executiveSummary)}</p>
+                </div>
               </div>
             </section>
 

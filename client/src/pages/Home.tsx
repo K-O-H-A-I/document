@@ -181,6 +181,208 @@ const historyBadge = (score: number) => {
   return { label: "Authentic Likely", className: "text-[var(--ok)]" };
 };
 
+const sampleRunCreatedAt = new Date('2026-04-20T18:12:00+05:30');
+
+const sampleReportRun: AnalysisRun = {
+  id: 'sample-preview-batch',
+  runId: 'sample-preview-batch',
+  createdAt: sampleRunCreatedAt,
+  overallDecision: 'REJECT',
+  files: [
+    {
+      id: 'sample-1',
+      name: 'aadhaar_front.png',
+      sizeLabel: '1.2 MB',
+      isPdf: false,
+      previewUrl: null,
+      verdict: 'Authentic Likely',
+      riskScore: 22,
+      decision: 'APPROVE',
+      summary: 'Identity details are consistent with the batch and no material tampering was detected.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Flat 402, Palm Residency, Sector 62, Noida, Uttar Pradesh 201309',
+        confidence: 94,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-2',
+      name: 'pan_card.png',
+      sizeLabel: '860 KB',
+      isPdf: false,
+      previewUrl: null,
+      verdict: 'Uncertain',
+      riskScore: 41,
+      decision: 'MANUAL_REVIEW',
+      summary: 'Name aligns with the batch identity, but OCR confidence is partial and should be reviewed.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Noida, Uttar Pradesh',
+        confidence: 71,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-3',
+      name: 'degree_certificate.pdf',
+      sizeLabel: '2.4 MB',
+      isPdf: true,
+      previewUrl: null,
+      verdict: 'Suspicious',
+      riskScore: 78,
+      decision: 'REJECT',
+      summary: 'Document timeline and visual consistency are materially out of line with the rest of the batch.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Noida, Uttar Pradesh',
+        confidence: 62,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-4',
+      name: 'marksheet_sem6.pdf',
+      sizeLabel: '2.1 MB',
+      isPdf: true,
+      previewUrl: null,
+      verdict: 'Uncertain',
+      riskScore: 58,
+      decision: 'MANUAL_REVIEW',
+      summary: 'The marksheet partially aligns on identity data but contains moderate visual inconsistencies.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Noida, Uttar Pradesh',
+        confidence: 67,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-5',
+      name: 'voter_id_front.png',
+      sizeLabel: '1.0 MB',
+      isPdf: false,
+      previewUrl: null,
+      verdict: 'Authentic Likely',
+      riskScore: 28,
+      decision: 'APPROVE',
+      summary: 'Low-risk identity document with consistent name and date fields.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Flat 402, Palm Residency, Sector 62, Noida, Uttar Pradesh 201309',
+        confidence: 90,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-6',
+      name: 'passport_front.png',
+      sizeLabel: '1.6 MB',
+      isPdf: false,
+      previewUrl: null,
+      verdict: 'Authentic Likely',
+      riskScore: 19,
+      decision: 'APPROVE',
+      summary: 'Passport data correlates strongly with the identity anchors in the batch.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Flat 402, Palm Residency, Sector 62, Noida, Uttar Pradesh 201309',
+        confidence: 96,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-7',
+      name: 'salary_slip_apr.pdf',
+      sizeLabel: '1.8 MB',
+      isPdf: true,
+      previewUrl: null,
+      verdict: 'Uncertain',
+      riskScore: 35,
+      decision: 'MANUAL_REVIEW',
+      summary: 'Salary slip is mostly consistent, but OCR extraction is incomplete and needs review.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Noida, Uttar Pradesh',
+        confidence: 69,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-8',
+      name: 'bank_statement_may.pdf',
+      sizeLabel: '2.6 MB',
+      isPdf: true,
+      previewUrl: null,
+      verdict: 'Uncertain',
+      riskScore: 33,
+      decision: 'MANUAL_REVIEW',
+      summary: 'Bank statement has acceptable structure but limited extracted identity anchors.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Noida, Uttar Pradesh',
+        confidence: 64,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-9',
+      name: 'experience_letter.pdf',
+      sizeLabel: '1.5 MB',
+      isPdf: true,
+      previewUrl: null,
+      verdict: 'Authentic Likely',
+      riskScore: 24,
+      decision: 'APPROVE',
+      summary: 'Employer letter is low risk and aligns with the identity documents in the batch.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Flat 402, Palm Residency, Sector 62, Noida, Uttar Pradesh 201309',
+        confidence: 83,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+    {
+      id: 'sample-10',
+      name: 'utility_bill_june.pdf',
+      sizeLabel: '1.3 MB',
+      isPdf: true,
+      previewUrl: null,
+      verdict: 'Uncertain',
+      riskScore: 31,
+      decision: 'MANUAL_REVIEW',
+      summary: 'Address evidence is present, though OCR confidence is only moderate.',
+      identity: {
+        name: 'Aarav Mehta',
+        dob: '1997-08-14',
+        address: 'Flat 402, Palm Residency, Sector 62, Noida, Uttar Pradesh 201309',
+        confidence: 61,
+      },
+      createdAt: sampleRunCreatedAt,
+    },
+  ],
+};
+
+const sampleBatchMeta = {
+  overallRisk: 78,
+  identitySimilarity: 86,
+  correlation: {
+    confidence: 84,
+    conclusion: 'Primary identity anchors detected across 10 documents.',
+    story:
+      'Identity documents broadly align on name, DOB, and address. One academic certificate is materially inconsistent with the rest of the batch and several supporting PDFs require manual review.',
+  },
+};
+
 export default function Home() {
   const activeTool: ToolType = 'document';
   const {
@@ -205,6 +407,7 @@ export default function Home() {
     () => toRuns(safeResults.filter((item) => item.toolType === activeTool)),
     [safeResults, activeTool]
   );
+  const displayedQwenRuns = qwenRuns.length > 0 ? qwenRuns : [sampleReportRun];
   const gptRuns: AnalysisRun[] = [];
   const safeHistoryItems = Array.isArray(historyItems) ? historyItems : [];
 
@@ -423,7 +626,10 @@ export default function Home() {
   const handleDownloadReport = async (run: AnalysisRun) => {
     setDownloadingReports((prev) => ({ ...prev, [run.id]: true }));
     try {
-      await downloadForensicReportPdf(run, batchMetaById[run.id]);
+      await downloadForensicReportPdf(
+        run,
+        batchMetaById[run.id] ?? (run.id === sampleReportRun.id ? sampleBatchMeta : undefined)
+      );
     } catch (error) {
       toast({
         title: 'PDF export failed',
@@ -648,7 +854,12 @@ export default function Home() {
               className="overflow-hidden"
             >
               <div className="mt-4">
-                <ForensicReportFrame run={run} batchMeta={batchMetaById[run.id]} />
+                <ForensicReportFrame
+                  run={run}
+                  batchMeta={
+                    batchMetaById[run.id] ?? (run.id === sampleReportRun.id ? sampleBatchMeta : undefined)
+                  }
+                />
               </div>
             </motion.div>
           )}
@@ -844,7 +1055,7 @@ export default function Home() {
                 Refresh
               </button>
               <span className="text-xs text-[var(--muted)]">
-                {qwenRuns.length} run{qwenRuns.length === 1 ? '' : 's'} total
+                {displayedQwenRuns.length} run{displayedQwenRuns.length === 1 ? '' : 's'} total
               </span>
             </div>
           </div>
@@ -855,7 +1066,7 @@ export default function Home() {
             transition={{ duration: 0.3 }}
             className="grid grid-cols-1 gap-6"
           >
-            {renderPanel('qwen', 'Recent Analysis', qwenRuns)}
+            {renderPanel('qwen', 'Recent Analysis', displayedQwenRuns)}
           </motion.div>
         </div>
 

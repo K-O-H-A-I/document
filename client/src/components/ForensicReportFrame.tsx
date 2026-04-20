@@ -1525,20 +1525,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
 
   const rowBuilders: Array<{ label: string; build: (file: ReportFile, index: number) => MatrixCell }> = [
     {
-      label: 'KYC Verdict',
-      build: (file, index) => {
-        const promptDoc = promptDocFor(index);
-        if (promptDoc?.verdict) {
-          return {
-            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
-            note: formatCaseVerdict(promptDoc.verdict) || String(promptDoc.verdict),
-            score: typeof promptDoc.confidence === 'number' ? promptDoc.confidence : file.riskScore,
-          };
-        }
-        return { tone: getRiskTone(file.riskScore), note: verdictText(file.decision), score: file.riskScore };
-      },
-    },
-    {
       label: 'Credential Match',
       build: (file) => {
         const name = file.identity?.name?.trim();

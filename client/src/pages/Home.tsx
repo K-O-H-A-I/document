@@ -667,7 +667,7 @@ export default function Home() {
               <Search className="w-7 h-7 text-[var(--muted)]" />
             </div>
             <h4 className="text-base font-medium text-[var(--text)] mb-2">No analysis yet</h4>
-            <p className="text-[var(--muted)] text-sm">Upload up to 3 files to start.</p>
+            <p className="text-[var(--muted)] text-sm">Upload up to 10 files to start.</p>
           </div>
         )}
 
@@ -737,7 +737,7 @@ export default function Home() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-2">
-                  {(Array.isArray(run.files) ? run.files : []).slice(0, 3).map((file) => (
+                  {(Array.isArray(run.files) ? run.files : []).slice(0, 10).map((file) => (
                     <button
                       key={file.id}
                       type="button"
@@ -771,9 +771,9 @@ export default function Home() {
                       )}
                     </button>
                   ))}
-                  {(Array.isArray(run.files) ? run.files : []).length > 3 && (
+                  {(Array.isArray(run.files) ? run.files : []).length > 10 && (
                     <div className="text-xs text-[var(--muted)]">
-                      +{(Array.isArray(run.files) ? run.files : []).length - 3}
+                      +{(Array.isArray(run.files) ? run.files : []).length - 10}
                     </div>
                   )}
                 </div>

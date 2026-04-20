@@ -31,6 +31,9 @@ type ReportRun = {
 
 type BatchMeta = {
   overallRisk?: number;
+  verdict?: string;
+  risk?: string;
+  finalVerdict?: any;
   identitySimilarity?: number;
   correlation?: {
     conclusion?: string;
@@ -157,7 +160,7 @@ const reportStyles = String.raw`
   }
   .meta {
     display: grid;
-    grid-template-columns: repeat(3, minmax(146px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     align-content: start;
     justify-self: end !important;
@@ -468,8 +471,6 @@ const reportStyles = String.raw`
   ══════════════════════════════════════════ */
 
   .header {
-    grid-template-columns: minmax(0, 1fr) minmax(500px, 560px) !important;
-    align-items: start !important;
     background: white !important;
     border-radius: 20px !important;
     padding: 28px 32px !important;
@@ -479,14 +480,6 @@ const reportStyles = String.raw`
       0 4px 16px rgba(0,0,0,0.06),
       0 16px 48px rgba(0,0,0,0.05) !important;
     border: 1px solid rgba(0,0,0,0.06) !important;
-  }
-
-  .meta {
-    grid-template-columns: repeat(2, minmax(220px, 1fr)) !important;
-    width: 100% !important;
-    max-width: 560px !important;
-    justify-self: stretch !important;
-    margin-left: 0 !important;
   }
 
   .logo {
@@ -515,46 +508,27 @@ const reportStyles = String.raw`
   }
 
   .meta-card {
-    position: relative !important;
-    border-radius: 18px !important;
-    border: 1px solid rgba(130, 146, 174, 0.22) !important;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,248,252,0.96) 100%) !important;
-    padding: 16px 18px !important;
-    box-shadow:
-      0 1px 2px rgba(15, 23, 42, 0.04),
-      0 10px 24px rgba(148, 163, 184, 0.14),
-      inset 0 1px 0 rgba(255,255,255,0.92) !important;
-    overflow: hidden !important;
-  }
-
-  .meta-card::before {
-    content: '' !important;
-    position: absolute !important;
-    inset: 0 0 auto 0 !important;
-    height: 3px !important;
-    background: linear-gradient(90deg, #17b9c0 0%, #ff6c88 100%) !important;
-    opacity: 0.9 !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    background: #F9F9F9 !important;
+    padding: 14px 18px !important;
   }
 
   .meta-label {
     font-size: 10px !important;
     font-weight: 800 !important;
-    letter-spacing: 0.16em !important;
+    letter-spacing: 0.12em !important;
     text-transform: uppercase !important;
-    color: #B8C2D3 !important;
-    margin-bottom: 10px !important;
-    line-height: 1.35 !important;
+    color: #C4C9D4 !important;
+    margin-bottom: 6px !important;
   }
 
   .meta-value {
-    font-size: 16px !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
-    color: #0F172A !important;
-    line-height: 1.45 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #111827 !important;
     font-family: 'SF Mono', 'Fira Code', monospace !important;
-    text-wrap: balance !important;
   }
 
   /* ══════════════════════════════════════════
@@ -693,167 +667,6 @@ const reportStyles = String.raw`
     color: rgba(255,255,255,0.82) !important;
     font-weight: 400 !important;
     line-height: 1.5 !important;
-  }
-
-  .subject-section,
-  .issue-section,
-  .closing-summary {
-    background: white !important;
-    border-radius: 20px !important;
-    padding: 24px 28px !important;
-    border: 1px solid rgba(0,0,0,0.06) !important;
-    box-shadow:
-      0 1px 3px rgba(0,0,0,0.04),
-      0 8px 32px rgba(0,0,0,0.06) !important;
-  }
-
-  .section-heading {
-    margin: 0 0 14px 0 !important;
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
-    color: #0D1117 !important;
-  }
-
-  .section-subcopy {
-    margin: -6px 0 18px 0 !important;
-    font-size: 13px !important;
-    color: #9CA3AF !important;
-    line-height: 1.55 !important;
-  }
-
-  .subject-grid {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-  }
-
-  .subject-card,
-  .issue-card,
-  .issue-list,
-  .closing-panel {
-    border-radius: 16px !important;
-    padding: 18px 20px !important;
-    background: #FAFAFA !important;
-    border: 1px solid rgba(0,0,0,0.06) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
-  }
-
-  .subject-label {
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.16em !important;
-    text-transform: uppercase !important;
-    color: #C4C9D4 !important;
-    margin-bottom: 8px !important;
-  }
-
-  .subject-value {
-    font-size: 18px !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
-    color: #111827 !important;
-    line-height: 1.35 !important;
-    overflow-wrap: anywhere !important;
-  }
-
-  .subject-note {
-    margin-top: 6px !important;
-    font-size: 12px !important;
-    color: #6B7280 !important;
-    line-height: 1.45 !important;
-  }
-
-  .issue-grid,
-  .closing-summary-grid {
-    display: grid !important;
-    gap: 14px !important;
-  }
-
-  .issue-grid {
-    grid-template-columns: 1.05fr 1.95fr !important;
-  }
-
-  .closing-summary-grid {
-    grid-template-columns: 1.2fr .8fr !important;
-    align-items: start !important;
-  }
-
-  .issue-card {
-    background: linear-gradient(135deg, #fff5f7 0%, #fff0f3 100%) !important;
-  }
-
-  .issue-card.ok {
-    background: linear-gradient(135deg, #f1fdf8 0%, #ebfbf4 100%) !important;
-  }
-
-  .issue-card.warn {
-    background: linear-gradient(135deg, #fff7ef 0%, #fff1e5 100%) !important;
-  }
-
-  .issue-badge {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    border-radius: 999px !important;
-    padding: 6px 12px !important;
-    font-size: 11px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.08em !important;
-    text-transform: uppercase !important;
-    margin-bottom: 12px !important;
-    background: rgba(220,38,38,0.10) !important;
-    color: #DC2626 !important;
-  }
-
-  .issue-card.ok .issue-badge {
-    background: rgba(22,163,74,0.10) !important;
-    color: #16A34A !important;
-  }
-
-  .issue-card.warn .issue-badge {
-    background: rgba(217,119,6,0.10) !important;
-    color: #D97706 !important;
-  }
-
-  .issue-title {
-    font-size: 20px !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
-    color: #111827 !important;
-    margin-bottom: 10px !important;
-  }
-
-  .issue-copy,
-  .closing-panel p {
-    font-size: 13px !important;
-    color: #6B7280 !important;
-    line-height: 1.6 !important;
-    margin: 0 !important;
-  }
-
-  .issue-list h4,
-  .closing-summary h4 {
-    margin: 0 0 10px 0 !important;
-    font-size: 14px !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.02em !important;
-    color: #111827 !important;
-  }
-
-  .issue-list ul,
-  .closing-summary ul {
-    margin: 0 !important;
-    padding-left: 18px !important;
-    display: grid !important;
-    gap: 8px !important;
-  }
-
-  .issue-list li,
-  .closing-summary li {
-    font-size: 13px !important;
-    color: #374151 !important;
-    line-height: 1.55 !important;
   }
 
   /* ══════════════════════════════════════════
@@ -1125,6 +938,31 @@ const getRiskTone = (riskScore: number): StatusTone => {
 
 const verdictText = (decision: Decision) => decisionLabel[decision];
 
+const formatCaseVerdict = (value?: string) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+  return normalized
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const toneFromPromptVerdict = (verdict?: string, fallbackRisk?: number): StatusTone => {
+  const normalized = String(verdict || '').toUpperCase();
+  if (normalized.includes('FAKE') || normalized.includes('REJECT')) return 'bad';
+  if (normalized.includes('SUSPICIOUS') || normalized.includes('INSUFFICIENT') || normalized.includes('UNVERIFIABLE')) {
+    return 'warn';
+  }
+  if (normalized.includes('AUTHENTIC') || normalized.includes('VERIFIED')) return 'ok';
+  return typeof fallbackRisk === 'number' ? getRiskTone(fallbackRisk) : 'na';
+};
+
+const compactList = (items: string[], fallback: string) => {
+  const cleaned = items.map((item) => item.trim()).filter(Boolean);
+  if (!cleaned.length) return fallback;
+  return cleaned.slice(0, 4).join('; ');
+};
+
 const collectComparableValue = (
   files: ReportFile[],
   selector: (file: ReportFile) => string | undefined
@@ -1158,6 +996,34 @@ const buildMatchCell = (
 
 const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
   const files = run.files.slice(0, 10);
+  const finalVerdict = batchMeta?.finalVerdict || {};
+  const candidate = finalVerdict?.candidate || {};
+  const academicTimeline = Array.isArray(finalVerdict?.academic?.timeline)
+    ? finalVerdict.academic.timeline
+    : [];
+  const employmentTimeline = Array.isArray(finalVerdict?.employment?.timeline)
+    ? finalVerdict.employment.timeline
+    : [];
+  const perDocVerdicts = Array.isArray(finalVerdict?.per_doc_verdicts)
+    ? finalVerdict.per_doc_verdicts
+    : [];
+  const fraudPatterns = Array.isArray(finalVerdict?.fraud_patterns)
+    ? finalVerdict.fraud_patterns
+    : [];
+  const missingDocs = Array.isArray(finalVerdict?.missing_docs)
+    ? finalVerdict.missing_docs
+    : [];
+  const docsExcluded = Array.isArray(finalVerdict?.docs_excluded)
+    ? finalVerdict.docs_excluded
+    : [];
+  const hasPrompt2 =
+    Boolean(finalVerdict?.verdict) ||
+    Boolean(finalVerdict?.summary) ||
+    Boolean(candidate?.name) ||
+    perDocVerdicts.length > 0 ||
+    academicTimeline.length > 0 ||
+    employmentTimeline.length > 0;
+  const caseVerdict = formatCaseVerdict(finalVerdict?.verdict || batchMeta?.verdict);
   const overallRisk =
     typeof batchMeta?.overallRisk === 'number'
       ? Math.round(batchMeta.overallRisk)
@@ -1165,124 +1031,123 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
   const identitySimilarity =
     typeof batchMeta?.identitySimilarity === 'number'
       ? `${Math.round(batchMeta.identitySimilarity)}%`
-      : 'N/A';
-  const correlationSummary = batchMeta?.correlation?.conclusion?.trim() || 'Cross-document review completed.';
+      : hasPrompt2
+        ? 'Prompt 2'
+        : 'N/A';
+  const correlationSummary =
+    finalVerdict?.summary?.trim() ||
+    batchMeta?.correlation?.conclusion?.trim() ||
+    'Cross-document review completed.';
   const analystNotes =
+    finalVerdict?.summary?.trim() ||
     batchMeta?.correlation?.story?.trim() ||
     files
       .map((file) => file.summary?.trim())
       .filter((summary): summary is string => Boolean(summary))
       .join(' ');
 
-  const canonicalName = collectComparableValue(files, (file) => file.identity?.name);
-  const canonicalDob = collectComparableValue(files, (file) => file.identity?.dob);
+  const canonicalName = candidate?.name?.trim() || collectComparableValue(files, (file) => file.identity?.name);
+  const canonicalDob = candidate?.dob?.trim() || collectComparableValue(files, (file) => file.identity?.dob);
   const canonicalAddress = collectComparableValue(files, (file) => file.identity?.address);
-  const subjectDocuments = files.map((file) => file.name).join(', ');
 
   const executiveSummary =
-    run.overallDecision === 'REJECT'
+    finalVerdict?.summary?.trim() ||
+    (run.overallDecision === 'REJECT'
       ? 'One or more uploaded documents show high-risk forensic signals and require rejection.'
       : run.overallDecision === 'MANUAL_REVIEW'
         ? 'The batch contains mixed authenticity signals and should be manually reviewed before approval.'
-        : 'The uploaded documents show acceptable consistency against the currently available forensic checks.';
+        : 'The uploaded documents show acceptable consistency against the currently available forensic checks.');
 
   const identitySummary =
-    canonicalName || canonicalDob || canonicalAddress
+    hasPrompt2 && (canonicalName || canonicalDob)
+      ? `Prompt 2 resolved candidate${canonicalName ? ` as ${canonicalName}` : ''}${canonicalDob ? `, DOB ${canonicalDob}` : ''}.`
+      : canonicalName || canonicalDob || canonicalAddress
       ? `Primary identity anchors detected across ${files.length} document${files.length === 1 ? '' : 's'}.`
       : 'Identity fields were limited in the returned analysis payload.';
 
-  const exceptionSummary = files
-    .filter((file) => file.decision !== 'APPROVE')
-    .map((file) => `${file.name}: ${verdictText(file.decision)}`)
-    .join('; ') || 'No material exceptions flagged.';
+  const exceptionSummary = compactList(
+    [
+      ...fraudPatterns.map((item: any) => `${item.sev || 'FLAG'}: ${item.pattern || item.detail || item.evidence || 'Fraud pattern flagged'}`),
+      ...missingDocs.map((item: any) => `Missing ${item.type || 'document'}${item.impact ? ` (${item.impact})` : ''}`),
+      ...docsExcluded.map((item: any) => `Excluded ${item.doc || 'document'}: ${item.reason || 'not analyzed'}`),
+      ...perDocVerdicts
+        .filter((item: any) => !/AUTHENTIC|VERIFIED/i.test(String(item.verdict || '')))
+        .map((item: any) => `${item.doc || 'Document'}: ${item.verdict || 'Review'}${item.key_flag ? ` - ${item.key_flag}` : ''}`),
+      ...files
+        .filter((file) => file.decision !== 'APPROVE')
+        .map((file) => `${file.name}: ${verdictText(file.decision)}`),
+    ],
+    'No material exceptions flagged.'
+  );
 
-  const subjectDetails = [
-    {
-      label: 'Name',
-      value: canonicalName || 'Not available',
-      note: canonicalName
-        ? 'Primary identity inferred from the strongest matching documents.'
-        : 'No stable name could be extracted from the returned payload.',
-    },
-    {
-      label: 'DOB',
-      value: canonicalDob || 'Not available',
-      note: canonicalDob
-        ? 'Cross-document DOB reference used in correlation checks.'
-        : 'DOB was not consistently returned across the uploaded documents.',
-    },
-    {
-      label: 'Address',
-      value: canonicalAddress || 'Not available',
-      note: canonicalAddress
-        ? 'Most consistent address observed across the available records.'
-        : 'Address details were partial or missing in the returned analysis data.',
-    },
-    {
-      label: 'Documents Submitted',
-      value: String(files.length),
-      note: subjectDocuments || 'No document names available.',
-    },
-  ];
+  const promptDocFor = (index: number) => perDocVerdicts[index] || null;
+  const academicFor = (index: number) => academicTimeline[index] || null;
+  const employmentFor = (index: number) => employmentTimeline[index] || null;
 
-  const issueSummary =
-    run.overallDecision === 'REJECT'
-      ? {
-          statusClass: 'risk',
-          badge: 'Issue Found',
-          title: 'Yes, there are material issues in this batch.',
-          copy: 'One or more uploaded documents carry rejection-level risk. The batch should not pass KYC verification until the flagged records are validated externally or replaced.',
-        }
-      : run.overallDecision === 'MANUAL_REVIEW'
-        ? {
-            statusClass: 'warn',
-            badge: 'Needs Review',
-            title: 'There are concerns that still need analyst review.',
-            copy: 'The current batch is not outright rejected, but it contains enough ambiguity that it should be held for manual KYC verification before approval.',
-          }
-        : {
-            statusClass: 'ok',
-            badge: 'No Major Issue',
-            title: 'No major issues were detected in the current batch.',
-            copy: 'The uploaded documents are broadly aligned with each other and do not show material risk requiring escalation based on the returned analysis payload.',
-          };
-
-  const issueBullets = files
-    .filter((file) => file.decision !== 'APPROVE')
-    .map((file) => `${file.name}: ${file.summary?.trim() || verdictText(file.decision)}`);
-
-  const finalSummaryBullets = [
-    `Primary subject details used for review: ${canonicalName || 'name unavailable'}, ${canonicalDob || 'DOB unavailable'}, ${canonicalAddress || 'address unavailable'}.`,
-    `KYC outcome for this batch: ${verdictText(run.overallDecision)}.`,
-    `Highest-risk note: ${exceptionSummary}`,
-    `Recommended next step: ${executiveSummary}`,
-  ];
-
-  const rowBuilders: Array<{ label: string; build: (file: ReportFile) => MatrixCell }> = [
+  const rowBuilders: Array<{ label: string; build: (file: ReportFile, index: number) => MatrixCell }> = [
     {
       label: 'KYC Verdict',
-      build: (file) => ({
-        tone: file.decision === 'REJECT' ? 'bad' : file.decision === 'MANUAL_REVIEW' ? 'warn' : 'ok',
-        note: verdictText(file.decision),
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: formatCaseVerdict(promptDoc.verdict) || String(promptDoc.verdict),
+          };
+        }
+        return {
+          tone: file.decision === 'REJECT' ? 'bad' : file.decision === 'MANUAL_REVIEW' ? 'warn' : 'ok',
+          note: verdictText(file.decision),
+        };
+      },
     },
     {
       label: 'Authenticity Signals',
-      build: (file) => ({
-        tone: getRiskTone(file.riskScore),
-        note: `${file.riskScore}% risk`,
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.confidence || promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: `${formatCaseVerdict(promptDoc.verdict) || 'Analyzed'}${promptDoc.confidence ? ` (${promptDoc.confidence}%)` : ''}`,
+          };
+        }
+        return {
+          tone: getRiskTone(file.riskScore),
+          note: `${file.riskScore}% risk`,
+        };
+      },
     },
     {
       label: 'Security / Tamper Check',
-      build: (file) => ({
-        tone: getRiskTone(file.riskScore),
-        note: file.summary?.trim() || 'Derived from model risk score',
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.key_flag) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: promptDoc.key_flag,
+          };
+        }
+        return {
+          tone: getRiskTone(file.riskScore),
+          note: file.summary?.trim() || analystNotes || 'Derived from model risk score',
+        };
+      },
     },
     {
       label: 'OCR / Data Extraction',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        const employmentItem = employmentFor(index);
+        const promptDoc = promptDocFor(index);
+        if (hasPrompt2 && (academicItem || employmentItem || candidate?.name || promptDoc?.verdict)) {
+          const pieces = [
+            candidate?.name ? `Name: ${candidate.name}` : '',
+            academicItem?.institution ? `Institution: ${academicItem.institution}` : '',
+            employmentItem?.company ? `Company: ${employmentItem.company}` : '',
+            academicItem?.year ? `Year: ${academicItem.year}` : '',
+          ].filter(Boolean);
+          return { tone: 'ok', note: pieces.slice(0, 2).join('; ') || 'Prompt 2 structured data available' };
+        }
         const confidence = file.identity?.confidence;
         if (typeof confidence === 'number') {
           return {
@@ -1322,7 +1187,18 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     },
     {
       label: 'Data Field Completeness',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        const employmentItem = employmentFor(index);
+        if (hasPrompt2 && (candidate?.name || candidate?.dob || academicItem || employmentItem)) {
+          const fields = [
+            candidate?.name,
+            candidate?.dob,
+            academicItem?.institution || employmentItem?.company,
+            academicItem?.year || employmentItem?.join_doc,
+          ].filter(Boolean).length;
+          return { tone: fields >= 2 ? 'ok' : 'warn', note: `${fields} Prompt 2 fields available` };
+        }
         const fieldCount = [file.identity?.name, file.identity?.dob, file.identity?.address].filter(Boolean).length;
         if (fieldCount >= 3) return { tone: 'ok', note: 'Core fields present' };
         if (fieldCount >= 1) return { tone: 'warn', note: `${fieldCount}/3 fields present` };
@@ -1335,35 +1211,79 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     },
     {
       label: 'Institution / Certificate Validation',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        if (academicItem) {
+          return {
+            tone: toneFromPromptVerdict(academicItem.status, file.riskScore),
+            note: `${academicItem.status || 'Academic data'}${academicItem.institution ? `: ${academicItem.institution}` : ''}`,
+          };
+        }
         const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'Requires issuer check' } : { tone: 'na', note: 'Not applicable' };
       },
     },
     {
       label: 'Certificate / Degree Genuine',
-      build: (file) => {
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: `${formatCaseVerdict(promptDoc.verdict) || promptDoc.verdict}${promptDoc.confidence ? ` (${promptDoc.confidence}%)` : ''}`,
+          };
+        }
         const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'Manual validation pending' } : { tone: 'na', note: 'Not applicable' };
       },
     },
     {
       label: 'Marks / CGPA / Grade Consistency',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        if (academicItem) {
+          const pctValues = [
+            typeof academicItem.pct_marksheet === 'number' && academicItem.pct_marksheet > 0 ? `marksheet ${academicItem.pct_marksheet}%` : '',
+            typeof academicItem.pct_certificate === 'number' && academicItem.pct_certificate > 0 ? `certificate ${academicItem.pct_certificate}%` : '',
+            academicItem.pct_conflict_detail || '',
+          ].filter(Boolean);
+          return {
+            tone: academicItem.pct_conflict ? 'warn' : toneFromPromptVerdict(academicItem.status, file.riskScore),
+            note: pctValues.join('; ') || `${academicItem.level || 'Academic'} ${academicItem.status || 'reviewed'}`,
+          };
+        }
         const isAcademic = /marks|grade|cgpa|transcript/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'No structured marks payload' } : { tone: 'na', note: 'Not applicable' };
       },
     },
     {
       label: 'Date Correlation Across Batch',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        const employmentItem = employmentFor(index);
+        if (academicItem?.year) {
+          return { tone: academicItem.year_resume_match === false ? 'warn' : 'ok', note: `Academic year ${academicItem.year}` };
+        }
+        if (employmentItem?.join_doc || employmentItem?.leave_doc) {
+          return {
+            tone: employmentItem.dates_match === false ? 'warn' : 'ok',
+            note: [employmentItem.join_doc, employmentItem.leave_doc].filter(Boolean).join(' to '),
+          };
+        }
         if (files.length <= 1) return { tone: 'na', note: 'Single document batch' };
         return buildMatchCell(file.identity?.dob, canonicalDob, 'Date');
       },
     },
     {
       label: 'Issue / Exam / Academic Timeline Plausible',
-      build: (file) => {
+      build: (file, index) => {
+        const academicItem = academicFor(index);
+        if (academicItem) {
+          return {
+            tone: academicItem.age_flag || academicItem.status === 'DISCREPANCY' ? 'warn' : 'ok',
+            note: `${academicItem.level || 'Academic'} ${academicItem.year || ''} ${academicItem.status || 'reviewed'}`.trim(),
+          };
+        }
         const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
         return isAcademic ? { tone: 'warn', note: 'Timeline not structured' } : { tone: 'na', note: 'Not applicable' };
       },
@@ -1385,17 +1305,27 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     },
     {
       label: 'Per-Document Final Verdict',
-      build: (file) => ({
-        tone: getRiskTone(file.riskScore),
-        note: verdictText(file.decision),
-        score: file.riskScore,
-      }),
+      build: (file, index) => {
+        const promptDoc = promptDocFor(index);
+        if (promptDoc?.verdict) {
+          return {
+            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
+            note: formatCaseVerdict(promptDoc.verdict) || String(promptDoc.verdict),
+            score: typeof promptDoc.confidence === 'number' ? promptDoc.confidence : file.riskScore,
+          };
+        }
+        return {
+          tone: getRiskTone(file.riskScore),
+          note: verdictText(file.decision),
+          score: file.riskScore,
+        };
+      },
     },
   ];
 
   const matrixRows: MatrixRow[] = rowBuilders.map((row) => ({
     label: row.label,
-    cells: files.map((file) => row.build(file)),
+    cells: files.map((file, index) => row.build(file, index)),
   }));
 
   const docHeaders = files
@@ -1473,7 +1403,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
             <section class="summary-row">
               <div class="summary-card primary">
                 <div class="summary-title">Executive Summary</div>
-                <div class="summary-value">${escapeHtml(verdictText(run.overallDecision))}</div>
+                <div class="summary-value">${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</div>
                 <div class="summary-note">${escapeHtml(executiveSummary)}</div>
               </div>
               <div class="summary-card">
@@ -1493,46 +1423,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               </div>
             </section>
 
-            <section class="subject-section">
-              <h2 class="section-heading">Subject Details</h2>
-              <p class="section-subcopy">Primary KYC details inferred from the uploaded documents for the person under verification.</p>
-              <div class="subject-grid">
-                ${subjectDetails
-                  .map(
-                    (item) => `
-                      <div class="subject-card">
-                        <div class="subject-label">${escapeHtml(item.label)}</div>
-                        <div class="subject-value">${escapeHtml(item.value)}</div>
-                        <div class="subject-note">${escapeHtml(item.note)}</div>
-                      </div>
-                    `
-                  )
-                  .join('')}
-              </div>
-            </section>
-
-            <section class="issue-section">
-              <h2 class="section-heading">Issue Check</h2>
-              <p class="section-subcopy">A quick KYC-style reading of whether anything is materially wrong in the current batch.</p>
-              <div class="issue-grid">
-                <div class="issue-card ${escapeHtml(issueSummary.statusClass)}">
-                  <div class="issue-badge">${escapeHtml(issueSummary.badge)}</div>
-                  <div class="issue-title">${escapeHtml(issueSummary.title)}</div>
-                  <div class="issue-copy">${escapeHtml(issueSummary.copy)}</div>
-                </div>
-                <div class="issue-list">
-                  <h4>What was flagged</h4>
-                  <ul>
-                    ${
-                      issueBullets.length > 0
-                        ? issueBullets.map((item) => `<li>${escapeHtml(item)}</li>`).join('')
-                        : '<li>No material issue was flagged in the current payload.</li>'
-                    }
-                  </ul>
-                </div>
-              </div>
-            </section>
-
             <section class="matrix-wrap">
               <div class="matrix-head">
                 <h2>Cross-Verification Matrix</h2>
@@ -1547,18 +1437,18 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               <div class="matrix-summary">
                 <div class="matrix-summary-card primary">
                   <div class="matrix-summary-label">Batch Verdict</div>
-                  <div class="matrix-summary-value">${escapeHtml(verdictText(run.overallDecision))}</div>
+                  <div class="matrix-summary-value">${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</div>
                   <div class="matrix-summary-note">${escapeHtml(correlationSummary)}</div>
                 </div>
                 <div class="matrix-summary-card">
                   <div class="matrix-summary-label">Identity Summary</div>
                   <div class="matrix-summary-value">${escapeHtml(identitySummary)}</div>
-                  <div class="matrix-summary-note">Based on identity fields returned by the API.</div>
+                  <div class="matrix-summary-note">Based on the final Prompt 2 verdict when available.</div>
                 </div>
                 <div class="matrix-summary-card">
                   <div class="matrix-summary-label">Date Summary</div>
                   <div class="matrix-summary-value">${escapeHtml(canonicalDob || 'Insufficient date data')}</div>
-                  <div class="matrix-summary-note">DOB matching is only available when OCR identity data is returned.</div>
+                  <div class="matrix-summary-note">DOB or document dates are shown when returned by Prompt 2.</div>
                 </div>
                 <div class="matrix-summary-card">
                   <div class="matrix-summary-label">Exception Summary</div>
@@ -1598,24 +1488,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                 <h3>Analyst / Model Notes</h3>
                 <p>${escapeHtml(analystNotes || 'No additional model narrative was returned for this batch.')}</p>
                 <p style="margin-top: 10px;"><strong>Recommendation:</strong> ${escapeHtml(executiveSummary)}</p>
-              </div>
-            </section>
-
-            <section class="closing-summary">
-              <h2 class="section-heading">Final KYC Summary</h2>
-              <p class="section-subcopy">High-level takeaways placed at the end of the report for quick reviewer sign-off.</p>
-              <div class="closing-summary-grid">
-                <div class="closing-panel">
-                  <h4>Summary</h4>
-                  <ul>
-                    ${finalSummaryBullets.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
-                  </ul>
-                </div>
-                <div class="closing-panel">
-                  <h4>Decision</h4>
-                  <p><strong>${escapeHtml(verdictText(run.overallDecision))}</strong></p>
-                  <p style="margin-top: 10px;">${escapeHtml(executiveSummary)}</p>
-                </div>
               </div>
             </section>
 

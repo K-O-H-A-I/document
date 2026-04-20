@@ -12,11 +12,8 @@ type UploadUrlResponse = {
   contentType?: string;
 };
 
-type AnalyzeResponse = {
-  risk_score: number;
-  summary?: string;
-  tokens_used?: number;
-  cost_incurred?: number;
+type UploadUrlsResponse = {
+  items: UploadUrlResponse[];
 };
 
 type BatchAnalyzeResponse = {
@@ -43,14 +40,37 @@ type BatchAnalyzeResponse = {
 
 type BatchSubmitResponse = {
   job_id: string;
+  case_id?: string;
   status: string;
 };
 
 type BatchJobStatusResponse = {
   job_id: string;
+  case_id?: string;
   status: string;
   error?: string;
   result?: BatchAnalyzeResponse;
+  final_verdict?: {
+    risk?: string;
+    verdict?: string;
+    confidence?: number;
+    summary?: string;
+    per_doc_verdicts?: Array<{
+      doc?: string;
+      verdict?: string;
+      confidence?: number;
+      key_flag?: string;
+    }>;
+  };
+  result_summary?: {
+    verdict?: string;
+    risk?: string;
+    confidence?: number;
+    summary?: string;
+  };
+  final_verdict_key?: string;
+  current_stage?: string;
+  percent_estimate?: number;
 };
 
 type FeedbackReaction = {
@@ -185,14 +205,28 @@ const extFromFile = (file: File) => {
 
 export const getUploadUrl = async (token: string, file: File) => {
   const ext = extFromFile(file) || "png";
-  return postJson<UploadUrlResponse>("/get-upload-url", { ext }, token);
+  return postJson<UploadUrlResponse>(
+    "/get-upload-url",
+    { ext, contentType: file.type || undefined },
+    token
+  );
 };
 
-export const uploadFile = async (uploadUrl: string, file: File) => {
+export const getUploadUrls = async (token: string, files: File[]) => {
+  const payload = {
+    files: files.map((file) => ({
+      ext: extFromFile(file) || "png",
+      contentType: file.type || undefined,
+    })),
+  };
+  return postJson<UploadUrlsResponse>("/get-upload-url", payload, token);
+};
+
+export const uploadFile = async (uploadUrl: string, file: File, contentType?: string) => {
   const res = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
-      "Content-Type": file.type || "image/png",
+      "Content-Type": contentType || file.type || "application/octet-stream",
     },
     body: file,
   });
@@ -202,12 +236,8 @@ export const uploadFile = async (uploadUrl: string, file: File) => {
   }
 };
 
-export const analyzeDocument = async (token: string, key: string) => {
-  return postJson<AnalyzeResponse>("/analyze", { key }, token);
-};
-
 export const analyzeBatch = async (token: string, files: Array<{ key: string }>) => {
-  return postJson<BatchAnalyzeResponse>("/batch-analyze", { files }, token);
+  return postJson<BatchSubmitResponse | BatchAnalyzeResponse>("/batch-analyze", { files }, token);
 };
 
 export const submitBatchAnalysis = async (token: string, files: Array<{ key: string }>) => {
@@ -257,7 +287,6 @@ export type {
   ApiError,
   StatsResponse,
   HistoryItem,
-  AnalyzeResponse,
   BatchAnalyzeResponse,
   BatchSubmitResponse,
   BatchJobStatusResponse,

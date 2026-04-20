@@ -167,23 +167,44 @@ const reportStyles = String.raw`
     margin-left: auto !important;
   }
   .meta-card {
-    border: 1px solid var(--line);
-    background: linear-gradient(180deg, #fbfdff 0%, #f3f7fb 100%);
-    border-radius: 12px;
-    padding: 11px 13px;
+    border: 1px solid rgba(0,0,0,0.07);
+    background: linear-gradient(145deg, #ffffff 0%, #f5f8ff 100%);
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .meta-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #123b7a, #198b7a);
+    border-radius: 16px 16px 0 0;
   }
   .meta-label {
-    font-size: 11px;
-    color: var(--muted);
+    font-size: 9.5px;
+    color: #9aa3b5;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
+    letter-spacing: 0.13em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    margin-top: 2px;
   }
   .meta-value {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.2;
+    color: #0f1f3d;
     word-break: break-word;
+  }
+  .meta-value.mono {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: #123b7a;
   }
   .summary-row {
     display: grid;
@@ -471,6 +492,8 @@ const reportStyles = String.raw`
   ══════════════════════════════════════════ */
 
   .header {
+    grid-template-columns: minmax(0, 1fr) minmax(660px, 720px) !important;
+    align-items: start !important;
     background: white !important;
     border-radius: 20px !important;
     padding: 28px 32px !important;
@@ -480,6 +503,13 @@ const reportStyles = String.raw`
       0 4px 16px rgba(0,0,0,0.06),
       0 16px 48px rgba(0,0,0,0.05) !important;
     border: 1px solid rgba(0,0,0,0.06) !important;
+  }
+
+  .meta {
+    width: 100% !important;
+    max-width: 720px !important;
+    justify-self: stretch !important;
+    margin-left: 0 !important;
   }
 
   .logo {
@@ -507,28 +537,54 @@ const reportStyles = String.raw`
     margin-top: 4px !important;
   }
 
+  .meta {
+    gap: 12px !important;
+  }
+
   .meta-card {
-    border-radius: 14px !important;
-    border: 1px solid rgba(0,0,0,0.08) !important;
-    background: #F9F9F9 !important;
-    padding: 14px 18px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(0,0,0,0.07) !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f5f8ff 100%) !important;
+    padding: 16px 20px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.8) inset !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: box-shadow 0.2s !important;
+  }
+
+  .meta-card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 3px !important;
+    background: linear-gradient(90deg, #123b7a, #198b7a) !important;
+    border-radius: 16px 16px 0 0 !important;
   }
 
   .meta-label {
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.12em !important;
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.13em !important;
     text-transform: uppercase !important;
-    color: #C4C9D4 !important;
-    margin-bottom: 6px !important;
+    color: #9aa3b5 !important;
+    margin-bottom: 8px !important;
+    margin-top: 2px !important;
   }
 
   .meta-value {
-    font-size: 15px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
-    letter-spacing: -0.02em !important;
-    color: #111827 !important;
+    letter-spacing: -0.01em !important;
+    color: #0f1f3d !important;
+    line-height: 1.2 !important;
+  }
+
+  .meta-value.mono {
     font-family: 'SF Mono', 'Fira Code', monospace !important;
+    font-size: 13px !important;
+    color: #123b7a !important;
   }
 
   /* ══════════════════════════════════════════
@@ -669,6 +725,103 @@ const reportStyles = String.raw`
     line-height: 1.5 !important;
   }
 
+  .subject-section,
+  .flagged-section,
+  .closing-summary {
+    background: white !important;
+    border-radius: 20px !important;
+    padding: 24px 28px !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.04),
+      0 8px 32px rgba(0,0,0,0.06) !important;
+  }
+
+  .section-heading {
+    margin: 0 0 14px 0 !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #0D1117 !important;
+  }
+
+  .section-subcopy {
+    margin: -6px 0 18px 0 !important;
+    font-size: 13px !important;
+    color: #9CA3AF !important;
+    line-height: 1.55 !important;
+  }
+
+  .subject-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .subject-card,
+  .flagged-card,
+  .closing-panel {
+    border-radius: 16px !important;
+    padding: 16px 18px !important;
+    background: #FAFAFA !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+  }
+
+  .subject-label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
+    color: #C4C9D4 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .subject-value {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #111827 !important;
+    line-height: 1.35 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .subject-note,
+  .closing-panel p {
+    margin-top: 6px !important;
+    font-size: 12px !important;
+    color: #6B7280 !important;
+    line-height: 1.45 !important;
+  }
+
+  .closing-summary-grid {
+    display: grid !important;
+    grid-template-columns: 1.2fr .8fr !important;
+    gap: 14px !important;
+    align-items: start !important;
+  }
+
+  .closing-summary h4 {
+    margin: 0 0 10px 0 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    color: #111827 !important;
+  }
+
+  .closing-summary ul {
+    margin: 0 !important;
+    padding-left: 18px !important;
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .closing-summary li {
+    font-size: 13px !important;
+    color: #374151 !important;
+    line-height: 1.55 !important;
+  }
+
   /* ══════════════════════════════════════════
      CROSS-VERIFICATION MATRIX SECTION
   ══════════════════════════════════════════ */
@@ -713,13 +866,14 @@ const reportStyles = String.raw`
   ══════════════════════════════════════════ */
 
   .matrix-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 12px !important;
-    margin-bottom: 24px !important;
+    margin-bottom: 16px !important;
   }
 
   .matrix-summary-card {
     border-radius: 16px !important;
-    padding: 20px !important;
+    padding: 16px !important;
     background: #FAFAFA !important;
     border: 1px solid rgba(0,0,0,0.07) !important;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
@@ -732,32 +886,107 @@ const reportStyles = String.raw`
   }
 
   .matrix-summary-label {
-    font-size: 10px !important;
+    font-size: 9px !important;
     font-weight: 800 !important;
-    letter-spacing: 0.16em !important;
+    letter-spacing: 0.14em !important;
     text-transform: uppercase !important;
     color: #C4C9D4 !important;
-    margin-bottom: 10px !important;
-  }
-
-  .matrix-summary-value {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.02em !important;
-    color: #111827 !important;
-    line-height: 1.4 !important;
     margin-bottom: 8px !important;
   }
 
-  .matrix-summary-note {
+  .matrix-summary-value {
     font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #111827 !important;
+    line-height: 1.35 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .matrix-summary-note {
+    font-size: 11px !important;
     color: #6B7280 !important;
-    line-height: 1.6 !important;
+    line-height: 1.45 !important;
     font-weight: 400 !important;
   }
 
   .matrix-summary-card .matrix-summary-value,
   .matrix-summary-card .matrix-summary-note {
+    overflow-wrap: anywhere !important;
+  }
+
+  .matrix-summary-card.issue {
+    background: linear-gradient(135deg, #fff5f7 0%, #fff0f3 100%) !important;
+  }
+
+  .matrix-summary-card.issue.ok {
+    background: linear-gradient(135deg, #f1fdf8 0%, #ebfbf4 100%) !important;
+  }
+
+  .matrix-summary-card.issue.warn {
+    background: linear-gradient(135deg, #fff7ef 0%, #fff1e5 100%) !important;
+  }
+
+  .matrix-summary-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    border-radius: 999px !important;
+    padding: 4px 8px !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 8px !important;
+    background: rgba(220,38,38,0.10) !important;
+    color: #DC2626 !important;
+  }
+
+  .matrix-summary-card.issue.ok .matrix-summary-badge {
+    background: rgba(22,163,74,0.10) !important;
+    color: #16A34A !important;
+  }
+
+  .matrix-summary-card.issue.warn .matrix-summary-badge {
+    background: rgba(217,119,6,0.10) !important;
+    color: #D97706 !important;
+  }
+
+  .matrix-summary-card.compact .matrix-summary-value {
+    font-size: 12px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .matrix-summary-card.compact .matrix-summary-note {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  .matrix-summary-more {
+    font-size: 10px !important;
+    color: #64748B !important;
+    margin-top: 6px !important;
+  }
+
+  .flagged-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .flagged-card strong {
+    display: block !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    color: #111827 !important;
+    margin-bottom: 6px !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .flagged-card span {
+    display: block !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    color: #475569 !important;
     overflow-wrap: anywhere !important;
   }
 
@@ -769,6 +998,11 @@ const reportStyles = String.raw`
     border-collapse: separate !important;
     border-spacing: 0 !important;
     width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .matrix-scroll {
+    overflow-x: visible !important;
   }
 
   .matrix thead th {
@@ -779,10 +1013,17 @@ const reportStyles = String.raw`
     background: #F3F4F6 !important;
     padding: 12px 10px !important;
     text-align: center !important;
+    vertical-align: middle !important;
     border-bottom: 2px solid #E5E7EB !important;
     position: sticky !important;
     top: 0 !important;
     z-index: 2 !important;
+  }
+
+  .matrix thead th:first-child {
+    text-align: left !important;
+    padding-left: 14px !important;
+    vertical-align: middle !important;
   }
 
   .matrix tbody th {
@@ -813,6 +1054,11 @@ const reportStyles = String.raw`
     line-height: 1.5 !important;
   }
 
+  .matrix tbody tr:first-child td,
+  .matrix tbody tr:first-child th {
+    border-top: 0 !important;
+  }
+
   .matrix tbody tr:nth-child(even) td,
   .matrix tbody tr:nth-child(even) th {
     background: #FDFDFD !important;
@@ -823,15 +1069,36 @@ const reportStyles = String.raw`
   }
 
   .matrix tbody tr:hover th {
-    background: #FFF0E8 !important;
-    color: #C2410C !important;
+    background: #FAFAFA !important;
+    color: #111827 !important;
   }
 
   .matrix thead th:not(:first-child) {
     font-size: 10px !important;
     font-weight: 700 !important;
+    color: #374151 !important;
+    height: 130px !important;
+    width: 52px !important;
+    vertical-align: bottom !important;
+    padding: 0 8px 10px 8px !important;
+  }
+
+  .matrix thead th:not(:first-child) .doc-name {
+    display: block !important;
+    writing-mode: vertical-rl !important;
+    transform: rotate(180deg) !important;
+    white-space: nowrap !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: #374151 !important;
     letter-spacing: 0.01em !important;
-    color: #6B7280 !important;
+    max-height: 120px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .matrix thead th:not(:first-child) .doc-type {
+    display: none !important;
   }
 
   /* ══════════════════════════════════════════
@@ -882,6 +1149,25 @@ const reportStyles = String.raw`
     padding: 2px 7px !important;
     border-radius: 6px !important;
     margin-top: 3px !important;
+    white-space: nowrap !important;
+  }
+
+  @media (max-width: 980px) {
+    .matrix-summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .flagged-grid { grid-template-columns: 1fr !important; }
+  }
+
+  @media (max-width: 860px) {
+    .matrix-summary,
+    .subject-grid,
+    .closing-summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .flagged-grid { grid-template-columns: 1fr !important; }
   }
 
   /* ══════════════════════════════════════════
@@ -1049,6 +1335,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
   const canonicalName = candidate?.name?.trim() || collectComparableValue(files, (file) => file.identity?.name);
   const canonicalDob = candidate?.dob?.trim() || collectComparableValue(files, (file) => file.identity?.dob);
   const canonicalAddress = collectComparableValue(files, (file) => file.identity?.address);
+  const subjectDocuments = files.map((file) => file.name).join(', ');
 
   const executiveSummary =
     finalVerdict?.summary?.trim() ||
@@ -1080,27 +1367,90 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     'No material exceptions flagged.'
   );
 
+  const subjectDetails = [
+    {
+      label: 'Name',
+      value: canonicalName || 'Not available',
+      note: canonicalName
+        ? 'Primary identity inferred from the strongest matching documents.'
+        : 'No stable name could be extracted from the returned payload.',
+    },
+    {
+      label: 'DOB',
+      value: canonicalDob || 'Not available',
+      note: canonicalDob
+        ? 'Cross-document DOB reference used in correlation checks.'
+        : 'DOB was not consistently returned across the uploaded documents.',
+    },
+    {
+      label: 'Address',
+      value: canonicalAddress || 'Not available',
+      note: canonicalAddress
+        ? 'Most consistent address observed across the available records.'
+        : 'Address details were partial or missing in the returned analysis data.',
+    },
+    {
+      label: 'Documents Submitted',
+      value: String(files.length),
+      note: subjectDocuments || 'No document names available.',
+    },
+  ];
+
+  const issueSummary =
+    run.overallDecision === 'REJECT'
+      ? {
+          statusClass: 'risk',
+          badge: 'Issue Found',
+          title: 'Material issues found.',
+          copy: 'Reject-level signals detected. Hold batch for external validation.',
+        }
+      : run.overallDecision === 'MANUAL_REVIEW'
+        ? {
+            statusClass: 'warn',
+            badge: 'Needs Review',
+            title: 'Analyst review required.',
+            copy: 'Mixed signals detected. Review before approval.',
+          }
+        : {
+            statusClass: 'ok',
+            badge: 'No Major Issue',
+            title: 'No major issue found.',
+            copy: 'Documents broadly align across current checks.',
+          };
+
+  const issueBullets = files
+    .filter((file) => file.decision !== 'APPROVE')
+    .map((file) => `${file.name}: ${file.summary?.trim() || verdictText(file.decision)}`);
+
+  const issuePreviewItems = files
+    .filter((file) => file.decision !== 'APPROVE')
+    .map((file) => ({
+      name: file.name,
+      summary: file.summary?.trim() || verdictText(file.decision),
+    }));
+
+  const issueListPreview =
+    issueBullets.length > 0
+      ? issuePreviewItems
+          .map(
+            (item) =>
+              `<div class="flagged-card"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.summary)}</span></div>`
+          )
+          .join('')
+      : 'No material issue flagged.';
+
+  const finalSummaryBullets = [
+    `Primary subject details used for review: ${canonicalName || 'name unavailable'}, ${canonicalDob || 'DOB unavailable'}, ${canonicalAddress || 'address unavailable'}.`,
+    `KYC outcome for this batch: ${caseVerdict || verdictText(run.overallDecision)}.`,
+    `Highest-risk note: ${exceptionSummary}`,
+    `Recommended next step: ${executiveSummary}`,
+  ];
+
   const promptDocFor = (index: number) => perDocVerdicts[index] || null;
   const academicFor = (index: number) => academicTimeline[index] || null;
   const employmentFor = (index: number) => employmentTimeline[index] || null;
 
   const rowBuilders: Array<{ label: string; build: (file: ReportFile, index: number) => MatrixCell }> = [
-    {
-      label: 'KYC Verdict',
-      build: (file, index) => {
-        const promptDoc = promptDocFor(index);
-        if (promptDoc?.verdict) {
-          return {
-            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
-            note: formatCaseVerdict(promptDoc.verdict) || String(promptDoc.verdict),
-          };
-        }
-        return {
-          tone: file.decision === 'REJECT' ? 'bad' : file.decision === 'MANUAL_REVIEW' ? 'warn' : 'ok',
-          note: verdictText(file.decision),
-        };
-      },
-    },
     {
       label: 'Authenticity Signals',
       build: (file, index) => {
@@ -1131,34 +1481,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
           tone: getRiskTone(file.riskScore),
           note: file.summary?.trim() || analystNotes || 'Derived from model risk score',
         };
-      },
-    },
-    {
-      label: 'OCR / Data Extraction',
-      build: (file, index) => {
-        const academicItem = academicFor(index);
-        const employmentItem = employmentFor(index);
-        const promptDoc = promptDocFor(index);
-        if (hasPrompt2 && (academicItem || employmentItem || candidate?.name || promptDoc?.verdict)) {
-          const pieces = [
-            candidate?.name ? `Name: ${candidate.name}` : '',
-            academicItem?.institution ? `Institution: ${academicItem.institution}` : '',
-            employmentItem?.company ? `Company: ${employmentItem.company}` : '',
-            academicItem?.year ? `Year: ${academicItem.year}` : '',
-          ].filter(Boolean);
-          return { tone: 'ok', note: pieces.slice(0, 2).join('; ') || 'Prompt 2 structured data available' };
-        }
-        const confidence = file.identity?.confidence;
-        if (typeof confidence === 'number') {
-          return {
-            tone: confidence >= 0.85 ? 'ok' : confidence >= 0.6 ? 'warn' : 'bad',
-            note: `OCR confidence ${(confidence * 100).toFixed(0)}%`,
-          };
-        }
-        if (file.identity?.name || file.identity?.dob || file.identity?.address) {
-          return { tone: 'warn', note: 'Partial identity extracted' };
-        }
-        return { tone: 'na', note: 'No OCR payload' };
       },
     },
     {
@@ -1380,7 +1702,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
           <div class="content">
             <section class="header">
               <div class="brand-wrap">
-                <div class="logo">RL</div>
+                <img src="/favicon-brand.png" alt="Reagvis Labs" class="logo" style="object-fit:contain;background:none;box-shadow:none;" />
                 <div class="brand-block">
                   <h1>Reagvis Forensic Verification Report</h1>
                   <div class="sub">
@@ -1397,12 +1719,16 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                   <div class="meta-label">Generated On</div>
                   <div class="meta-value">${escapeHtml(formatDisplayDate(run.createdAt))}</div>
                 </div>
+                <div class="meta-card">
+                  <div class="meta-label">KYC Status</div>
+                  <div class="meta-value">Not Checked</div>
+                </div>
               </div>
             </section>
 
             <section class="summary-row">
               <div class="summary-card primary">
-                <div class="summary-title">Executive Summary</div>
+                <div class="summary-title">Batch Verdict</div>
                 <div class="summary-value">${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</div>
                 <div class="summary-note">${escapeHtml(executiveSummary)}</div>
               </div>
@@ -1423,6 +1749,24 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               </div>
             </section>
 
+            <section class="subject-section">
+              <h2 class="section-heading">Subject Details</h2>
+              <p class="section-subcopy">Primary KYC details inferred from the uploaded documents for the person under verification.</p>
+              <div class="subject-grid">
+                ${subjectDetails
+                  .map(
+                    (item) => `
+                      <div class="subject-card">
+                        <div class="subject-label">${escapeHtml(item.label)}</div>
+                        <div class="subject-value">${escapeHtml(item.value)}</div>
+                        <div class="subject-note">${escapeHtml(item.note)}</div>
+                      </div>
+                    `
+                  )
+                  .join('')}
+              </div>
+            </section>
+
             <section class="matrix-wrap">
               <div class="matrix-head">
                 <h2>Cross-Verification Matrix</h2>
@@ -1435,25 +1779,26 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               </div>
 
               <div class="matrix-summary">
-                <div class="matrix-summary-card primary">
+                <div class="matrix-summary-card compact primary">
                   <div class="matrix-summary-label">Batch Verdict</div>
                   <div class="matrix-summary-value">${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</div>
                   <div class="matrix-summary-note">${escapeHtml(correlationSummary)}</div>
                 </div>
-                <div class="matrix-summary-card">
+                <div class="matrix-summary-card compact issue ${escapeHtml(issueSummary.statusClass)}">
+                  <div class="matrix-summary-label">Issue Check</div>
+                  <div class="matrix-summary-badge">${escapeHtml(issueSummary.badge)}</div>
+                  <div class="matrix-summary-value">${escapeHtml(issueSummary.title)}</div>
+                  <div class="matrix-summary-note">${escapeHtml(issueSummary.copy)}</div>
+                </div>
+                <div class="matrix-summary-card compact">
                   <div class="matrix-summary-label">Identity Summary</div>
                   <div class="matrix-summary-value">${escapeHtml(identitySummary)}</div>
-                  <div class="matrix-summary-note">Based on the final Prompt 2 verdict when available.</div>
+                  <div class="matrix-summary-note">Derived from returned identity fields.</div>
                 </div>
-                <div class="matrix-summary-card">
+                <div class="matrix-summary-card compact">
                   <div class="matrix-summary-label">Date Summary</div>
                   <div class="matrix-summary-value">${escapeHtml(canonicalDob || 'Insufficient date data')}</div>
-                  <div class="matrix-summary-note">DOB or document dates are shown when returned by Prompt 2.</div>
-                </div>
-                <div class="matrix-summary-card">
-                  <div class="matrix-summary-label">Exception Summary</div>
-                  <div class="matrix-summary-value">${escapeHtml(exceptionSummary)}</div>
-                  <div class="matrix-summary-note">Highest risk or review items in the batch.</div>
+                  <div class="matrix-summary-note">DOB shown only when OCR identity data is available.</div>
                 </div>
               </div>
 
@@ -1472,6 +1817,20 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               </div>
             </section>
 
+            <section class="flagged-section">
+              <h2 class="section-heading">Flagged Documents</h2>
+              <p class="section-subcopy">Documents that need review or carry the highest forensic concern in the current batch.</p>
+              ${
+                issueBullets.length > 0
+                  ? `
+                    <div class="flagged-grid">
+                      ${issueListPreview}
+                    </div>
+                  `
+                  : `<div class="matrix-summary-note">${escapeHtml(issueListPreview)}</div>`
+              }
+            </section>
+
             <section class="bottom">
               <div class="note-box">
                 <h3>Cross-Document Findings</h3>
@@ -1488,6 +1847,24 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                 <h3>Analyst / Model Notes</h3>
                 <p>${escapeHtml(analystNotes || 'No additional model narrative was returned for this batch.')}</p>
                 <p style="margin-top: 10px;"><strong>Recommendation:</strong> ${escapeHtml(executiveSummary)}</p>
+              </div>
+            </section>
+
+            <section class="closing-summary">
+              <h2 class="section-heading">Final KYC Summary</h2>
+              <p class="section-subcopy">High-level takeaways placed at the end of the report for quick reviewer sign-off.</p>
+              <div class="closing-summary-grid">
+                <div class="closing-panel">
+                  <h4>Summary</h4>
+                  <ul>
+                    ${finalSummaryBullets.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+                  </ul>
+                </div>
+                <div class="closing-panel">
+                  <h4>Decision</h4>
+                  <p><strong>${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</strong></p>
+                  <p style="margin-top: 10px;">${escapeHtml(executiveSummary)}</p>
+                </div>
               </div>
             </section>
 

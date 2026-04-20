@@ -492,16 +492,18 @@ const reportStyles = String.raw`
   ══════════════════════════════════════════ */
 
   .header {
-    grid-template-columns: minmax(0, 1fr) minmax(660px, 720px) !important;
-    align-items: start !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
     background: white !important;
     border-radius: 20px !important;
-    padding: 28px 32px !important;
+    padding: 20px 28px !important;
     margin-bottom: 20px !important;
     box-shadow:
       0 1px 3px rgba(0,0,0,0.05),
-      0 4px 16px rgba(0,0,0,0.06),
-      0 16px 48px rgba(0,0,0,0.05) !important;
+      0 4px 16px rgba(0,0,0,0.06) !important;
     border: 1px solid rgba(0,0,0,0.06) !important;
   }
 
@@ -523,10 +525,11 @@ const reportStyles = String.raw`
   }
 
   .brand-block h1 {
-    font-size: 26px !important;
+    font-size: 18px !important;
     font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
+    letter-spacing: -0.02em !important;
     color: #0D1117 !important;
+    white-space: nowrap !important;
   }
 
   .brand-block .sub {
@@ -1074,27 +1077,25 @@ const reportStyles = String.raw`
   }
 
   .matrix thead th:not(:first-child) {
+    width: 80px !important;
+    min-width: 80px !important;
+    padding: 10px 6px !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+  }
+
+  .doc-name-wrap {
+    display: block !important;
+  }
+
+  .doc-name-wrap .doc-name {
+    display: block !important;
     font-size: 10px !important;
     font-weight: 700 !important;
     color: #374151 !important;
-    height: 130px !important;
-    width: 52px !important;
-    vertical-align: bottom !important;
-    padding: 0 8px 10px 8px !important;
-  }
-
-  .matrix thead th:not(:first-child) .doc-name {
-    display: block !important;
-    writing-mode: vertical-rl !important;
-    transform: rotate(180deg) !important;
-    white-space: nowrap !important;
-    font-size: 10.5px !important;
-    font-weight: 700 !important;
-    color: #374151 !important;
-    letter-spacing: 0.01em !important;
-    max-height: 120px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    word-break: break-all !important;
+    line-height: 1.3 !important;
+    text-align: center !important;
   }
 
   .matrix thead th:not(:first-child) .doc-type {
@@ -1125,14 +1126,23 @@ const reportStyles = String.raw`
     letter-spacing: 0.01em !important;
     display: block !important;
     margin-top: 4px !important;
-    line-height: 1.45 !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  td .tiny {
+    font-size: 9.5px !important;
+    line-height: 1.25 !important;
   }
 
   .score {
-    font-size: 18px !important;
+    font-size: 16px !important;
     font-weight: 800 !important;
     display: block !important;
     margin-top: 3px !important;
+    margin-bottom: 2px !important;
   }
 
   /* ══════════════════════════════════════════
@@ -1183,6 +1193,69 @@ const reportStyles = String.raw`
       box-shadow: none !important;
       border: 1px solid #E5E7EB !important;
     }
+
+    .page {
+      min-height: unset !important;
+      height: auto !important;
+      overflow: visible !important;
+      padding: 12px 16px !important;
+    }
+    .watermark { display: none !important; }
+    .content { gap: 8px !important; }
+    section, .matrix-wrap { margin-bottom: 8px !important; }
+
+    .header {
+      padding: 10px 16px !important;
+      margin-bottom: 8px !important;
+      border-radius: 12px !important;
+    }
+    .brand-block h1 { font-size: 14px !important; }
+    .brand-block .sub { font-size: 10px !important; margin-top: 2px !important; }
+    .logo { width: 36px !important; height: 36px !important; }
+    .meta-card { padding: 8px 12px !important; }
+    .meta-card::before { height: 2px !important; }
+    .meta-label { font-size: 8px !important; margin-bottom: 4px !important; }
+    .meta-value { font-size: 12px !important; }
+
+    /* ── Stat boxes — compact in print ── */
+    .summary-row { margin-bottom: 8px !important; gap: 8px !important; }
+    .summary-card,
+    .summary-card.primary,
+    .summary-card:not(.primary) {
+      padding: 10px 14px !important;
+      min-height: unset !important;
+      border-radius: 12px !important;
+    }
+    .summary-card.primary .summary-value,
+    .summary-card:not(.primary) .summary-value,
+    .summary-value { font-size: 22px !important; font-weight: 900 !important; margin-bottom: 2px !important; }
+    .summary-card.primary .summary-title,
+    .summary-card:not(.primary) .summary-title,
+    .summary-title { margin-bottom: 4px !important; font-size: 9px !important; }
+    .summary-card.primary .summary-note,
+    .summary-card:not(.primary) .summary-note,
+    .summary-note { font-size: 10px !important; line-height: 1.3 !important; }
+
+    /* ── Subject / flagged / closing sections ── */
+    .subject-section, .flagged-section, .closing-summary {
+      padding: 10px 14px !important;
+      margin-bottom: 8px !important;
+      border-radius: 12px !important;
+    }
+    .subject-grid { gap: 6px !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .subject-card, .flagged-card, .closing-panel { padding: 8px 10px !important; border-radius: 10px !important; }
+    .subject-value { font-size: 13px !important; }
+    .subject-note { font-size: 10px !important; margin-top: 2px !important; }
+    .section-heading { font-size: 14px !important; margin-bottom: 6px !important; }
+    .section-subcopy { font-size: 10px !important; margin-bottom: 8px !important; }
+
+    /* ── Matrix ── */
+    .matrix-head { padding: 8px 12px !important; }
+    .matrix-summary { padding: 8px 12px !important; gap: 8px !important; }
+    .matrix-summary-card { padding: 8px 10px !important; }
+    .matrix tbody td, .matrix tbody th { padding: 6px 5px !important; font-size: 10px !important; }
+    .matrix tbody th { font-size: 11px !important; }
+    .flagged-grid { gap: 8px !important; }
   }
 `;
 
@@ -1391,7 +1464,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     },
     {
       label: 'Documents Submitted',
-      value: String(files.length),
+      value: `${files.length} files`,
       note: subjectDocuments || 'No document names available.',
     },
   ];
@@ -1452,178 +1525,95 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
 
   const rowBuilders: Array<{ label: string; build: (file: ReportFile, index: number) => MatrixCell }> = [
     {
-      label: 'Authenticity Signals',
-      build: (file, index) => {
-        const promptDoc = promptDocFor(index);
-        if (promptDoc?.confidence || promptDoc?.verdict) {
-          return {
-            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
-            note: `${formatCaseVerdict(promptDoc.verdict) || 'Analyzed'}${promptDoc.confidence ? ` (${promptDoc.confidence}%)` : ''}`,
-          };
-        }
-        return {
-          tone: getRiskTone(file.riskScore),
-          note: `${file.riskScore}% risk`,
-        };
-      },
-    },
-    {
-      label: 'Security / Tamper Check',
-      build: (file, index) => {
-        const promptDoc = promptDocFor(index);
-        if (promptDoc?.key_flag) {
-          return {
-            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
-            note: promptDoc.key_flag,
-          };
-        }
-        return {
-          tone: getRiskTone(file.riskScore),
-          note: file.summary?.trim() || analystNotes || 'Derived from model risk score',
-        };
-      },
-    },
-    {
-      label: 'Photo / Face Presence & Clarity',
+      label: 'Credential Match',
       build: (file) => {
-        if (file.isPdf) return { tone: 'na', note: 'PDF source' };
-        if (file.previewUrl) return { tone: 'ok', note: 'Preview available' };
-        return { tone: 'warn', note: 'Preview unavailable' };
-      },
-    },
-    {
-      label: 'Name Match vs Batch Identity',
-      build: (file) => buildMatchCell(file.identity?.name, canonicalName, 'Name'),
-    },
-    {
-      label: 'DOB Match',
-      build: (file) => buildMatchCell(file.identity?.dob, canonicalDob, 'DOB'),
-    },
-    {
-      label: 'Address Match',
-      build: (file) => buildMatchCell(file.identity?.address, canonicalAddress, 'Address'),
-    },
-    {
-      label: 'ID Number / Format Validation',
-      build: () => ({ tone: 'na', note: 'Not returned by API' }),
-    },
-    {
-      label: 'Data Field Completeness',
-      build: (file, index) => {
-        const academicItem = academicFor(index);
-        const employmentItem = employmentFor(index);
-        if (hasPrompt2 && (candidate?.name || candidate?.dob || academicItem || employmentItem)) {
-          const fields = [
-            candidate?.name,
-            candidate?.dob,
-            academicItem?.institution || employmentItem?.company,
-            academicItem?.year || employmentItem?.join_doc,
-          ].filter(Boolean).length;
-          return { tone: fields >= 2 ? 'ok' : 'warn', note: `${fields} Prompt 2 fields available` };
+        const name = file.identity?.name?.trim();
+        const dob = file.identity?.dob?.trim();
+        const addr = file.identity?.address?.trim();
+        const parts: string[] = [];
+        const tones: string[] = [];
+
+        if (name && canonicalName) {
+          const match = name.toLowerCase() === canonicalName.toLowerCase();
+          parts.push(match ? 'name ✓' : 'name ✗');
+          tones.push(match ? 'ok' : 'warn');
+        } else {
+          parts.push('name —');
+          tones.push('na');
         }
-        const fieldCount = [file.identity?.name, file.identity?.dob, file.identity?.address].filter(Boolean).length;
-        if (fieldCount >= 3) return { tone: 'ok', note: 'Core fields present' };
-        if (fieldCount >= 1) return { tone: 'warn', note: `${fieldCount}/3 fields present` };
-        return { tone: 'na', note: 'No identity fields' };
-      },
-    },
-    {
-      label: 'Issuing Authority Verification',
-      build: () => ({ tone: 'na', note: 'Not returned by API' }),
-    },
-    {
-      label: 'Institution / Certificate Validation',
-      build: (file, index) => {
-        const academicItem = academicFor(index);
-        if (academicItem) {
-          return {
-            tone: toneFromPromptVerdict(academicItem.status, file.riskScore),
-            note: `${academicItem.status || 'Academic data'}${academicItem.institution ? `: ${academicItem.institution}` : ''}`,
-          };
+        if (dob && canonicalDob) {
+          const match = dob === canonicalDob;
+          parts.push(match ? 'DOB ✓' : 'DOB ✗');
+          tones.push(match ? 'ok' : 'warn');
+        } else {
+          parts.push('DOB —');
+          tones.push('na');
         }
-        const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
-        return isAcademic ? { tone: 'warn', note: 'Requires issuer check' } : { tone: 'na', note: 'Not applicable' };
+        if (addr && canonicalAddress) {
+          const match = addr.toLowerCase() === canonicalAddress.toLowerCase();
+          parts.push(match ? 'addr ✓' : 'addr ✗');
+          tones.push(match ? 'ok' : 'warn');
+        } else {
+          parts.push('addr —');
+          tones.push('na');
+        }
+
+        const worst = tones.includes('bad') ? 'bad' : tones.includes('warn') ? 'warn' : tones.every(t => t === 'ok') ? 'ok' : tones.every(t => t === 'na') ? 'na' : 'warn';
+        return { tone: worst, note: parts.join('; ') };
       },
     },
     {
-      label: 'Certificate / Degree Genuine',
+      label: 'Authenticity Review',
       build: (file, index) => {
         const promptDoc = promptDocFor(index);
-        if (promptDoc?.verdict) {
-          return {
-            tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),
-            note: `${formatCaseVerdict(promptDoc.verdict) || promptDoc.verdict}${promptDoc.confidence ? ` (${promptDoc.confidence}%)` : ''}`,
-          };
-        }
-        const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
-        return isAcademic ? { tone: 'warn', note: 'Manual validation pending' } : { tone: 'na', note: 'Not applicable' };
+        const layoutNote = file.riskScore >= 70 ? 'tamper risk' : file.riskScore >= 31 ? 'check' : 'clean';
+        const note = promptDoc?.key_flag
+          ? `${promptDoc.key_flag}`
+          : `${file.riskScore}% · ${layoutNote}`;
+        return {
+          tone: toneFromPromptVerdict(promptDoc?.verdict, file.riskScore),
+          note,
+        };
       },
     },
     {
-      label: 'Marks / CGPA / Grade Consistency',
+      label: 'Academic Consistency',
       build: (file, index) => {
         const academicItem = academicFor(index);
+        const promptDoc = promptDocFor(index);
+        const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
+        if (!isAcademic && !academicItem) return { tone: 'na', note: 'Not applicable' };
+
         if (academicItem) {
-          const pctValues = [
-            typeof academicItem.pct_marksheet === 'number' && academicItem.pct_marksheet > 0 ? `marksheet ${academicItem.pct_marksheet}%` : '',
-            typeof academicItem.pct_certificate === 'number' && academicItem.pct_certificate > 0 ? `certificate ${academicItem.pct_certificate}%` : '',
-            academicItem.pct_conflict_detail || '',
-          ].filter(Boolean);
-          return {
-            tone: academicItem.pct_conflict ? 'warn' : toneFromPromptVerdict(academicItem.status, file.riskScore),
-            note: pctValues.join('; ') || `${academicItem.level || 'Academic'} ${academicItem.status || 'reviewed'}`,
-          };
+          const parts: string[] = [];
+          if (academicItem.institution) parts.push(academicItem.institution);
+          if (academicItem.year) parts.push(`year ${academicItem.year}`);
+          if (typeof academicItem.pct_marksheet === 'number' && academicItem.pct_marksheet > 0) parts.push(`${academicItem.pct_marksheet}%`);
+          if (academicItem.pct_conflict_detail) parts.push(academicItem.pct_conflict_detail);
+          if (academicItem.age_flag) parts.push('timeline flag');
+          const tone = academicItem.pct_conflict || academicItem.age_flag ? 'warn' : toneFromPromptVerdict(academicItem.status, file.riskScore);
+          return { tone, note: parts.join('; ') || `${academicItem.level || 'Academic'} ${academicItem.status || 'reviewed'}` };
         }
-        const isAcademic = /marks|grade|cgpa|transcript/i.test(file.name);
-        return isAcademic ? { tone: 'warn', note: 'No structured marks payload' } : { tone: 'na', note: 'Not applicable' };
+        return {
+          tone: isAcademic ? toneFromPromptVerdict(promptDoc?.verdict, file.riskScore) : 'na',
+          note: isAcademic ? (promptDoc?.verdict ? formatCaseVerdict(promptDoc.verdict) || 'Reviewed' : 'Manual validation pending') : 'Not applicable',
+        };
       },
     },
     {
-      label: 'Date Correlation Across Batch',
+      label: 'Cross-Document Conflicts',
       build: (file, index) => {
         const academicItem = academicFor(index);
         const employmentItem = employmentFor(index);
-        if (academicItem?.year) {
-          return { tone: academicItem.year_resume_match === false ? 'warn' : 'ok', note: `Academic year ${academicItem.year}` };
-        }
-        if (employmentItem?.join_doc || employmentItem?.leave_doc) {
-          return {
-            tone: employmentItem.dates_match === false ? 'warn' : 'ok',
-            note: [employmentItem.join_doc, employmentItem.leave_doc].filter(Boolean).join(' to '),
-          };
-        }
-        if (files.length <= 1) return { tone: 'na', note: 'Single document batch' };
-        return buildMatchCell(file.identity?.dob, canonicalDob, 'Date');
+        const conflicts: string[] = [];
+        if (file.identity?.name && canonicalName && file.identity.name.trim().toLowerCase() !== canonicalName.toLowerCase()) conflicts.push('name differs from batch');
+        if (file.identity?.dob && canonicalDob && file.identity.dob.trim() !== canonicalDob.trim()) conflicts.push('DOB mismatch');
+        if (academicItem?.pct_conflict && academicItem?.pct_conflict_detail) conflicts.push(academicItem.pct_conflict_detail);
+        if (academicItem?.year_resume_match === false) conflicts.push('academic year conflict');
+        if (employmentItem?.dates_match === false) conflicts.push('employment dates conflict');
+        if (conflicts.length === 0) return { tone: 'ok', note: 'No cross-doc conflicts detected' };
+        return { tone: conflicts.length >= 2 ? 'bad' : 'warn', note: conflicts.join('; ') };
       },
-    },
-    {
-      label: 'Issue / Exam / Academic Timeline Plausible',
-      build: (file, index) => {
-        const academicItem = academicFor(index);
-        if (academicItem) {
-          return {
-            tone: academicItem.age_flag || academicItem.status === 'DISCREPANCY' ? 'warn' : 'ok',
-            note: `${academicItem.level || 'Academic'} ${academicItem.year || ''} ${academicItem.status || 'reviewed'}`.trim(),
-          };
-        }
-        const isAcademic = /degree|certificate|marks|transcript|diploma/i.test(file.name);
-        return isAcademic ? { tone: 'warn', note: 'Timeline not structured' } : { tone: 'na', note: 'Not applicable' };
-      },
-    },
-    {
-      label: 'Font / Alignment / Layout Integrity',
-      build: (file) => ({
-        tone: getRiskTone(file.riskScore),
-        note: file.riskScore >= 70 ? 'High visual-risk signal' : file.riskScore >= 31 ? 'Check recommended' : 'No major signal',
-      }),
-    },
-    {
-      label: 'QR / Barcode Decodable',
-      build: () => ({ tone: 'na', note: 'Not returned by API' }),
-    },
-    {
-      label: 'Signature Presence / Integrity',
-      build: () => ({ tone: 'na', note: 'Not returned by API' }),
     },
     {
       label: 'Per-Document Final Verdict',
@@ -1636,11 +1626,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
             score: typeof promptDoc.confidence === 'number' ? promptDoc.confidence : file.riskScore,
           };
         }
-        return {
-          tone: getRiskTone(file.riskScore),
-          note: verdictText(file.decision),
-          score: file.riskScore,
-        };
+        return { tone: getRiskTone(file.riskScore), note: verdictText(file.decision), score: file.riskScore };
       },
     },
   ];
@@ -1654,8 +1640,9 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     .map(
       (file) => `
         <th>
-          <span class="doc-name">${escapeHtml(file.name)}</span>
-          <span class="doc-type">${escapeHtml(file.isPdf ? 'PDF document' : 'Image document')}</span>
+          <div class="doc-name-wrap">
+            <span class="doc-name">${escapeHtml(file.name)}</span>
+          </div>
         </th>
       `
     )
@@ -1851,20 +1838,10 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
             </section>
 
             <section class="closing-summary">
-              <h2 class="section-heading">Final KYC Summary</h2>
-              <p class="section-subcopy">High-level takeaways placed at the end of the report for quick reviewer sign-off.</p>
-              <div class="closing-summary-grid">
-                <div class="closing-panel">
-                  <h4>Summary</h4>
-                  <ul>
-                    ${finalSummaryBullets.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
-                  </ul>
-                </div>
-                <div class="closing-panel">
-                  <h4>Decision</h4>
-                  <p><strong>${escapeHtml(caseVerdict || verdictText(run.overallDecision))}</strong></p>
-                  <p style="margin-top: 10px;">${escapeHtml(executiveSummary)}</p>
-                </div>
+              <h2 class="section-heading">Summary</h2>
+              <div class="closing-panel" style="max-width:100%;">
+                <p style="margin:0;font-size:13px;color:#374151;line-height:1.6;">${escapeHtml(analystNotes || correlationSummary || 'Cross-document review completed.')}</p>
+                <p style="margin:6px 0 0;font-size:13px;color:#374151;line-height:1.6;"><strong>Recommendation:</strong> ${escapeHtml(executiveSummary)}</p>
               </div>
             </section>
 
@@ -1893,62 +1870,63 @@ export function ForensicReportFrame({ run, batchMeta }: ForensicReportFrameProps
   );
 }
 
-const buildPrintableReportElement = (run: ReportRun, batchMeta?: BatchMeta) => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(buildReportHtml(run, batchMeta), 'text/html');
-  const page = doc.querySelector('.page');
-
-  if (!page) {
-    throw new Error('Unable to prepare report for PDF export.');
-  }
-
-  const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.left = '-10000px';
-  container.style.top = '0';
-  container.style.width = '1400px';
-  container.style.background = '#ffffff';
-  container.style.zIndex = '-1';
-
-  const style = document.createElement('style');
-  style.textContent = reportStyles;
-  container.appendChild(style);
-  container.appendChild(document.importNode(page, true));
-  document.body.appendChild(container);
-
-  return container;
-};
-
 const sanitizeFileName = (value: string) =>
   value.replace(/[^a-z0-9-_]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase();
 
 export async function downloadForensicReportPdf(run: ReportRun, batchMeta?: BatchMeta) {
-  const container = buildPrintableReportElement(run, batchMeta);
+  const baseName = sanitizeFileName(run.runId || run.id || 'report') || 'report';
 
+  // Inline logo so it resolves inside blob URL
+  let logoSrc = '/favicon-brand.png';
   try {
-    const html2pdfModule = await import('html2pdf.js');
-    const html2pdf = (html2pdfModule as any).default || html2pdfModule;
-    const baseName = sanitizeFileName(run.runId || run.id || 'report') || 'report';
+    const res = await fetch('/favicon-brand.png');
+    const buf = await res.arrayBuffer();
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+    logoSrc = `data:image/png;base64,${b64}`;
+  } catch {}
 
-    await html2pdf()
-      .set({
-        margin: 0,
-        filename: `reagvis-forensic-report-${baseName}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'landscape',
-        },
-      })
-      .from(container)
-      .save();
-  } finally {
-    container.remove();
-  }
+  const reportHtml = buildReportHtml(run, batchMeta).replace('/favicon-brand.png', logoSrc);
+
+  const headStyle = `
+    <style id="__print-style">
+      @page { size: 297mm 210mm; margin: 10mm; }
+      @media print {
+        #__pdf-bar, #__pdf-spacer { display: none !important; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      }
+    </style>
+  `;
+
+  const bar = `
+    <div id="__pdf-bar" style="position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;justify-content:space-between;background:#123b7a;color:#fff;padding:10px 20px;font-family:sans-serif;font-size:13px;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.4);">
+      <span style="opacity:.8;">reagvis-forensic-report-${baseName}.pdf</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:11px;opacity:.7;">Destination: <strong style="color:#6ee7d4;">Save as PDF</strong> &nbsp;|&nbsp; More settings → Background graphics: <strong style="color:#6ee7d4;">ON</strong></span>
+        <button id="__print-btn" style="background:#198b7a;color:#fff;border:none;padding:8px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">Save as PDF</button>
+        <button id="__close-btn" style="background:rgba(255,255,255,0.15);color:#fff;border:none;width:32px;height:32px;border-radius:6px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&#x2715;</button>
+      </div>
+    </div>
+    <div id="__pdf-spacer" style="height:52px;"></div>
+    <script>
+      document.getElementById('__print-btn').addEventListener('click', function() {
+        document.getElementById('__pdf-bar').style.display = 'none';
+        document.getElementById('__pdf-spacer').style.display = 'none';
+        window.print();
+        document.getElementById('__pdf-bar').style.display = 'flex';
+        document.getElementById('__pdf-spacer').style.display = 'block';
+      });
+      document.getElementById('__close-btn').addEventListener('click', function() {
+        window.open('', '_self');
+        window.close();
+      });
+    </script>
+  `;
+
+  const fullHtml = reportHtml
+    .replace('</head>', `${headStyle}</head>`)
+    .replace('</body>', `${bar}</body>`);
+  const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (w) setTimeout(() => URL.revokeObjectURL(url), 120000);
 }

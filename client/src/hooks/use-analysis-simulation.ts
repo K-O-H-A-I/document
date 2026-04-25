@@ -1060,9 +1060,11 @@ const mapHistoryToResults = (history: HistoryItem[]): AnalysisResult[] => {
     const riskSource =
       typeof item.overall_risk === "number"
         ? item.overall_risk
-        : typeof item.risk_score === "number"
-          ? item.risk_score
-          : riskLabelToScore(item.risk);
+        : item.risk
+          ? riskLabelToScore(item.risk)
+          : typeof item.risk_score === "number"
+            ? item.risk_score
+            : 0;
     const riskScore = Math.max(0, Math.min(100, Math.round(riskSource)));
     const { priority, decision } = mapRiskToDecision(riskScore);
     const filename = filenameForDisplay(item.key || `scan-${index + 1}`);

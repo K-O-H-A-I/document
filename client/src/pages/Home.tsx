@@ -927,9 +927,11 @@ export default function Home() {
                 const scoreSource =
                   typeof item.overall_risk === "number"
                     ? item.overall_risk
-                    : typeof item.risk_score === "number"
-                      ? item.risk_score
-                      : riskLabelToScore(item.risk);
+                    : item.risk
+                      ? riskLabelToScore(item.risk)
+                      : typeof item.risk_score === "number"
+                        ? item.risk_score
+                        : 0;
                 const score = Math.max(0, Math.min(100, Math.round(scoreSource)));
                 const badge = historyBadge(score);
                 const historyId = [

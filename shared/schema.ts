@@ -28,6 +28,9 @@ export const analysisResults = pgTable("analysis_results", {
   metadata: jsonb("metadata").$type<{
     decision: string;
     evidence: string[];
+    docId?: string;
+    batchIds?: string[];
+    sourceType?: string;
   }>(),
   geolocation: jsonb("geolocation").$type<{
     decision: string;

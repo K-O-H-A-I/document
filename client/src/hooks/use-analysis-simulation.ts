@@ -903,7 +903,7 @@ const buildPrompt1IdentityMap = (jobResult: any) => {
     }
 
     docIds.forEach((docId) => {
-      byDocId.set(docId, identity);
+      byDocId.set(String(docId), identity);
     });
   });
 
@@ -990,6 +990,7 @@ const buildResultsFromCaseJob = (
     : [];
   const prompt1IdentityByDocId = buildPrompt1IdentityMap(jobResult);
   const documentIdentityByDocId = buildJobDocumentIdentityMap(jobResult);
+  const jobDocuments = Array.isArray(jobResult?.documents) ? jobResult.documents : [];
   const overallVerdict = String(finalVerdict?.verdict || resultSummary?.verdict || "");
   const overallRisk = String(finalVerdict?.risk || resultSummary?.risk || "");
   const fallbackRiskScore = verdictToRiskScore(overallVerdict, overallRisk);
@@ -998,6 +999,8 @@ const buildResultsFromCaseJob = (
   return uploads.map((upload, index) => {
     const docVerdict = perDocVerdicts[index] || {};
     const docId = caseDocIdForIndex(index);
+    const jobDocument =
+      jobDocuments.find((item: any) => String(item?.doc_id || "") === docId) || {};
     const prompt1Identity = prompt1IdentityByDocId.get(docId);
     const documentIdentity = documentIdentityByDocId.get(docId);
     const docRiskScore = docVerdict?.verdict
@@ -1049,7 +1052,16 @@ const buildResultsFromCaseJob = (
                   : undefined,
             }
           : null,
-      metadata: null,
+      metadata: {
+        decision,
+        evidence,
+        docId,
+        batchIds: Array.isArray(jobDocument?.batch_ids)
+          ? jobDocument.batch_ids.map((value: any) => String(value))
+          : [],
+        sourceType:
+          typeof jobDocument?.source_type === "string" ? jobDocument.source_type : undefined,
+      },
       geolocation: null,
     } satisfies AnalysisResult;
   });

@@ -996,11 +996,30 @@ const buildResultsFromCaseJob = (
   const fallbackRiskScore = verdictToRiskScore(overallVerdict, overallRisk);
   const summary = String(finalVerdict?.summary || resultSummary?.summary || "Case analysis completed.");
 
+  const resolvePerDocVerdict = (docId: string, batchIds: string[], index: number) => {
+    const exact = perDocVerdicts.find((item: any) => String(item?.doc || "").trim() === docId);
+    if (exact) return exact;
+
+    for (const batchRef of batchIds) {
+      const batchMatch = perDocVerdicts.find((item: any) => String(item?.doc || "").trim() === batchRef);
+      if (batchMatch) return batchMatch;
+    }
+
+    const canUseIndexFallback =
+      perDocVerdicts.length === uploads.length &&
+      perDocVerdicts.every((item: any) => !String(item?.doc || "").trim());
+
+    return canUseIndexFallback ? perDocVerdicts[index] || {} : {};
+  };
+
   return uploads.map((upload, index) => {
-    const docVerdict = perDocVerdicts[index] || {};
     const docId = caseDocIdForIndex(index);
     const jobDocument =
       jobDocuments.find((item: any) => String(item?.doc_id || "") === docId) || {};
+    const batchIds = Array.isArray(jobDocument?.batch_ids)
+      ? jobDocument.batch_ids.map((value: any) => String(value))
+      : [];
+    const docVerdict = resolvePerDocVerdict(docId, batchIds, index);
     const prompt1Identity = prompt1IdentityByDocId.get(docId);
     const documentIdentity = documentIdentityByDocId.get(docId);
     const docRiskScore = docVerdict?.verdict
@@ -1056,9 +1075,7 @@ const buildResultsFromCaseJob = (
         decision,
         evidence,
         docId,
-        batchIds: Array.isArray(jobDocument?.batch_ids)
-          ? jobDocument.batch_ids.map((value: any) => String(value))
-          : [],
+        batchIds,
         sourceType:
           typeof jobDocument?.source_type === "string" ? jobDocument.source_type : undefined,
       },

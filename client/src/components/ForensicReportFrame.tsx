@@ -1579,7 +1579,26 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
           .join('')
       : 'No material issue flagged.';
 
-  const promptDocFor = (index: number) => perDocVerdicts[index] || null;
+  const promptDocFor = (file: ReportFile, index: number) => {
+    const docId = file.metadata?.docId?.trim();
+    const batchIds = Array.isArray(file.metadata?.batchIds) ? file.metadata.batchIds : [];
+
+    if (docId) {
+      const exact = perDocVerdicts.find((item: any) => String(item?.doc || '').trim() === docId);
+      if (exact) return exact;
+    }
+
+    for (const batchRef of batchIds) {
+      const batchMatch = perDocVerdicts.find((item: any) => String(item?.doc || '').trim() === batchRef);
+      if (batchMatch) return batchMatch;
+    }
+
+    const canUseIndexFallback =
+      perDocVerdicts.length === files.length &&
+      perDocVerdicts.every((item: any) => !String(item?.doc || '').trim());
+
+    return canUseIndexFallback ? perDocVerdicts[index] || null : null;
+  };
   const academicFor = (file: ReportFile) => {
     const docType = inferAcademicDocType(file.name);
     if (!docType) return null;
@@ -1630,7 +1649,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     {
       label: 'Authenticity Review',
       build: (file, index) => {
-        const promptDoc = promptDocFor(index);
+        const promptDoc = promptDocFor(file, index);
         const layoutNote = file.riskScore >= 70 ? 'tamper risk' : file.riskScore >= 31 ? 'check' : 'clean';
         const note = promptDoc?.key_flag
           ? `${promptDoc.key_flag}`
@@ -1645,7 +1664,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
       label: 'Academic Consistency',
       build: (file, index) => {
         const academicItem = academicFor(file);
-        const promptDoc = promptDocFor(index);
+        const promptDoc = promptDocFor(file, index);
         const isAcademic = Boolean(inferAcademicDocType(file.name));
         if (!isAcademic && !academicItem) return { tone: 'na', note: 'Not applicable' };
 
@@ -1683,7 +1702,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     {
       label: 'Per-Document Final Verdict',
       build: (file, index) => {
-        const promptDoc = promptDocFor(index);
+        const promptDoc = promptDocFor(file, index);
         if (promptDoc?.verdict) {
           return {
             tone: toneFromPromptVerdict(promptDoc.verdict, file.riskScore),

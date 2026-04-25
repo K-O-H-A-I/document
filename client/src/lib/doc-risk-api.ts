@@ -49,6 +49,20 @@ type BatchJobStatusResponse = {
   case_id?: string;
   status: string;
   error?: string;
+  prompt1_outputs?: Array<{
+    name?: string;
+    dob?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pin?: string;
+    AADHAAR?: {
+      address_on_doc?: string;
+    };
+    _input_units?: Array<{
+      doc_id?: string;
+    }>;
+  }>;
   result?: BatchAnalyzeResponse;
   final_verdict?: {
     risk?: string;

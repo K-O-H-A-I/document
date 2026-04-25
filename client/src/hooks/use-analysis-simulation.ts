@@ -844,6 +844,61 @@ const verdictToRiskScore = (verdict?: string, fallbackRisk?: string) => {
   return riskLabelToScore(fallbackRisk);
 };
 
+const caseDocIdForIndex = (index: number) => `doc_${String(index + 1).padStart(2, "0")}`;
+
+const normalizePrompt1Address = (output: any) => {
+  const direct = String(output?.address || "").trim();
+  if (direct) return direct;
+  const aadhaarAddress = String(output?.AADHAAR?.address_on_doc || "").trim();
+  if (aadhaarAddress) return aadhaarAddress;
+  const parts = [output?.city, output?.state, output?.pin]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : undefined;
+};
+
+const buildPrompt1IdentityMap = (jobResult: any) => {
+  const outputs = Array.isArray(jobResult?.prompt1_outputs)
+    ? jobResult.prompt1_outputs
+    : Array.isArray(jobResult?.result?.prompt1_outputs)
+      ? jobResult.result.prompt1_outputs
+      : [];
+  const byDocId = new Map<
+    string,
+    {
+      name?: string;
+      dob?: string;
+      address?: string;
+    }
+  >();
+
+  outputs.forEach((output: any, index: number) => {
+    const identity = {
+      name: String(output?.name || "").trim() || undefined,
+      dob: String(output?.dob || "").trim() || undefined,
+      address: normalizePrompt1Address(output),
+    };
+    const inputUnits = Array.isArray(output?._input_units) ? output._input_units : [];
+    const docIds = Array.from(
+      new Set(
+        inputUnits
+          .map((unit: any) => String(unit?.doc_id || "").trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (docIds.length === 0) {
+      docIds.push(caseDocIdForIndex(index));
+    }
+
+    docIds.forEach((docId) => {
+      byDocId.set(docId, identity);
+    });
+  });
+
+  return byDocId;
+};
+
 const buildResultsFromBatchResponse = (
   batchResponse: any,
   keyToFile: Map<string, File>,
@@ -891,6 +946,7 @@ const buildResultsFromCaseJob = (
   const perDocVerdicts = Array.isArray(finalVerdict?.per_doc_verdicts)
     ? finalVerdict.per_doc_verdicts
     : [];
+  const prompt1IdentityByDocId = buildPrompt1IdentityMap(jobResult);
   const overallVerdict = String(finalVerdict?.verdict || resultSummary?.verdict || "");
   const overallRisk = String(finalVerdict?.risk || resultSummary?.risk || "");
   const fallbackRiskScore = verdictToRiskScore(overallVerdict, overallRisk);
@@ -898,6 +954,7 @@ const buildResultsFromCaseJob = (
 
   return uploads.map((upload, index) => {
     const docVerdict = perDocVerdicts[index] || {};
+    const prompt1Identity = prompt1IdentityByDocId.get(caseDocIdForIndex(index));
     const docRiskScore = docVerdict?.verdict
       ? verdictToRiskScore(String(docVerdict.verdict), overallRisk)
       : fallbackRiskScore;
@@ -924,16 +981,18 @@ const buildResultsFromCaseJob = (
       timestamp: new Date(now),
       previewUrl: URL.createObjectURL(upload.file),
       previewUrls: null,
-      identity: finalVerdict?.candidate
-        ? {
-            name: finalVerdict.candidate.name || undefined,
-            dob: finalVerdict.candidate.dob || undefined,
-            confidence:
-              typeof finalVerdict.confidence === "number"
-                ? finalVerdict.confidence / 100
-                : undefined,
-          }
-        : null,
+      identity:
+        finalVerdict?.candidate || prompt1Identity
+          ? {
+              name: finalVerdict?.candidate?.name || prompt1Identity?.name || undefined,
+              dob: finalVerdict?.candidate?.dob || prompt1Identity?.dob || undefined,
+              address: prompt1Identity?.address || undefined,
+              confidence:
+                typeof finalVerdict.confidence === "number"
+                  ? finalVerdict.confidence / 100
+                  : undefined,
+            }
+          : null,
       metadata: null,
       geolocation: null,
     } satisfies AnalysisResult;

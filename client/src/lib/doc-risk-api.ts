@@ -125,6 +125,8 @@ type StatsResponse = {
 type HistoryItem = {
   scan_time: string;
   risk_score?: number;
+  risk?: string;
+  verdict?: string;
   summary?: string;
   key?: string;
   job_type?: string;
@@ -145,6 +147,7 @@ type HistoryItem = {
     confidence?: number;
     story?: string;
   };
+  final_verdict_key?: string;
 };
 
 const authHeader = (token: string | null) =>

@@ -91,10 +91,32 @@ const formatRunTime = (date: Date) => {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
+const riskLabelToScore = (risk?: string) => {
+  const normalized = String(risk || "").toUpperCase();
+  if (normalized === "CRITICAL") return 95;
+  if (normalized === "HIGH") return 85;
+  if (normalized === "MEDIUM") return 55;
+  if (normalized === "LOW") return 15;
+  return 0;
+};
+
+const parseApiDate = (value?: string | Date | null) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  const text = String(value).trim();
+  if (!text) return null;
+  const normalized =
+    /(?:Z|[+-]\d{2}:\d{2})$/i.test(text) ? text : `${text}Z`;
+  const parsed = new Date(normalized);
+  if (!Number.isNaN(parsed.getTime())) return parsed;
+  const fallback = new Date(text);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
 const formatHistoryDateTime = (value?: string | Date | null) => {
   if (!value) return "Unknown date";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "Unknown date";
+  const date = parseApiDate(value);
+  if (!date || Number.isNaN(date.getTime())) return "Unknown date";
   return date.toLocaleString("en-US", {
     month: "short",
     day: "numeric",
@@ -179,6 +201,17 @@ const historyBadge = (score: number) => {
   if (score >= 70) return { label: "High Risk", className: "text-[var(--danger)]" };
   if (score >= 31) return { label: "Uncertain", className: "text-[var(--grad-orange-start)]" };
   return { label: "Authentic Likely", className: "text-[var(--ok)]" };
+};
+
+const historyFindings = (item: any) => {
+  const findings = [
+    item.summary,
+    item.correlation?.conclusion,
+    item.correlation?.story,
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  return findings.length > 0 ? findings : ["No cross-document findings stored for this run."];
 };
 
 export default function Home() {
@@ -896,7 +929,7 @@ export default function Home() {
                     ? item.overall_risk
                     : typeof item.risk_score === "number"
                       ? item.risk_score
-                      : 0;
+                      : riskLabelToScore(item.risk);
                 const score = Math.max(0, Math.min(100, Math.round(scoreSource)));
                 const badge = historyBadge(score);
                 const historyId = [
@@ -916,6 +949,25 @@ export default function Home() {
                 const fileNames = isBatch && item.files?.length
                   ? item.files.map((file) => formatKey(file.key)).filter(Boolean).join(", ")
                   : null;
+                const historyFiles = Array.isArray(item.files) ? item.files : [];
+                const aggregateRisk = historyFiles.length > 0
+                  ? Math.round(
+                      historyFiles.reduce((sum, file) => {
+                        const next =
+                          typeof file.risk_score === "number"
+                            ? file.risk_score
+                            : score;
+                        return sum + next;
+                      }, 0) / historyFiles.length
+                    )
+                  : score;
+                const flaggedDocuments = historyFiles
+                  .filter((file) => typeof file.risk_score === "number" ? file.risk_score >= 31 : score >= 31)
+                  .map((file) => ({
+                    label: formatKey(file.key) || file.key || "Document",
+                    risk: typeof file.risk_score === "number" ? Math.round(file.risk_score) : score,
+                  }));
+                const findings = historyFindings(item);
                 return (
                   <div
                     key={historyId}
@@ -967,53 +1019,66 @@ export default function Home() {
                           <div className="mt-3 border-t border-[var(--border)] pt-3 space-y-3">
                             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
                               <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
-                                Summary
+                                Risk Score Across All Files
                               </div>
-                              <div className="text-xs text-[var(--muted)] whitespace-pre-line">
-                                {summary}
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="text-xs text-[var(--muted)]">
+                                  Aggregated history risk for this run.
+                                </div>
+                                <div className="text-sm font-semibold text-[var(--text)]">
+                                  {aggregateRisk}%
+                                </div>
                               </div>
                             </div>
 
-                            {item.correlation?.conclusion && (
-                              <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
-                                <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
-                                  Correlation Conclusion
-                                </div>
-                                <div className="text-xs text-[var(--muted)] whitespace-pre-line">
-                                  {item.correlation.conclusion}
-                                </div>
+                            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
+                              <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-2">
+                                Flagged Documents
                               </div>
-                            )}
-
-                            {item.correlation?.story && (
-                              <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
-                                <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
-                                  Correlation Story
+                              {flaggedDocuments.length > 0 ? (
+                                <div className="space-y-2">
+                                  {flaggedDocuments.map((file, fileIndex) => (
+                                    <div
+                                      key={`${historyId}-flagged-${file.label}-${fileIndex}`}
+                                      className="rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-2 flex items-center justify-between gap-3"
+                                    >
+                                      <div className="min-w-0 text-xs text-[var(--text)] truncate" title={file.label}>
+                                        {file.label}
+                                      </div>
+                                      <div className="text-xs text-[var(--muted)] shrink-0">{file.risk}%</div>
+                                    </div>
+                                  ))}
                                 </div>
-                                <div className="text-xs text-[var(--muted)] whitespace-pre-line">
-                                  {item.correlation.story}
-                                </div>
-                              </div>
-                            )}
-
-                            {typeof item.identity_similarity === "number" && (
-                              <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
-                                <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-1">
-                                  Identity Similarity
-                                </div>
+                              ) : (
                                 <div className="text-xs text-[var(--muted)]">
-                                  {item.identity_similarity}
+                                  No flagged documents recorded for this run.
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
 
-                            {isBatch && Array.isArray(item.files) && item.files.length > 0 && (
+                            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
+                              <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-2">
+                                Cross-Document Findings
+                              </div>
+                              <div className="space-y-2">
+                                {findings.map((finding, findingIndex) => (
+                                  <div
+                                    key={`${historyId}-finding-${findingIndex}`}
+                                    className="text-xs text-[var(--muted)] whitespace-pre-line"
+                                  >
+                                    {finding}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {isBatch && historyFiles.length > 0 && (
                               <div className="rounded-lg border border-[var(--border)] bg-[var(--panel2)]/45 p-3">
                                 <div className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-semibold mb-2">
                                   Batch Files
                                 </div>
                                 <div className="space-y-2">
-                                  {item.files.map((file, fileIndex) => {
+                                  {historyFiles.map((file, fileIndex) => {
                                     const fileRisk = Math.max(
                                       0,
                                       Math.min(100, Math.round(file.risk_score ?? 0))

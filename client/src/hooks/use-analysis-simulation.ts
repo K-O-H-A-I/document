@@ -835,6 +835,17 @@ const riskLabelToScore = (risk?: string) => {
   return 50;
 };
 
+const parseApiTimestamp = (value?: string | Date | null) => {
+  if (!value) return new Date();
+  if (value instanceof Date) return value;
+  const text = String(value).trim();
+  if (!text) return new Date();
+  const normalized =
+    /(?:Z|[+-]\d{2}:\d{2})$/i.test(text) ? text : `${text}Z`;
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? new Date(text) : parsed;
+};
+
 const verdictToRiskScore = (verdict?: string, fallbackRisk?: string) => {
   const normalized = String(verdict || "").toUpperCase();
   if (normalized.includes("LIKELY_FAKE") || normalized.includes("FAKE")) return 88;
@@ -1051,11 +1062,11 @@ const mapHistoryToResults = (history: HistoryItem[]): AnalysisResult[] => {
         ? item.overall_risk
         : typeof item.risk_score === "number"
           ? item.risk_score
-          : 0;
+          : riskLabelToScore(item.risk);
     const riskScore = Math.max(0, Math.min(100, Math.round(riskSource)));
     const { priority, decision } = mapRiskToDecision(riskScore);
     const filename = filenameForDisplay(item.key || `scan-${index + 1}`);
-    const timestamp = item.scan_time ? new Date(item.scan_time) : new Date();
+    const timestamp = parseApiTimestamp(item.scan_time);
 
     return {
       id: index + 1,

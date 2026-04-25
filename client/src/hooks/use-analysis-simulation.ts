@@ -899,6 +899,37 @@ const buildPrompt1IdentityMap = (jobResult: any) => {
   return byDocId;
 };
 
+const buildJobDocumentIdentityMap = (jobResult: any) => {
+  const documents = Array.isArray(jobResult?.documents)
+    ? jobResult.documents
+    : Array.isArray(jobResult?.result?.documents)
+      ? jobResult.result.documents
+      : [];
+  const byDocId = new Map<
+    string,
+    {
+      name?: string;
+      dob?: string;
+      address?: string;
+    }
+  >();
+
+  documents.forEach((document: any) => {
+    const docId = String(document?.doc_id || "").trim();
+    if (!docId) return;
+    const identity = {
+      name: String(document?.identity?.name || "").trim() || undefined,
+      dob: String(document?.identity?.dob || "").trim() || undefined,
+      address: String(document?.identity?.address || "").trim() || undefined,
+    };
+    if (identity.name || identity.dob || identity.address) {
+      byDocId.set(docId, identity);
+    }
+  });
+
+  return byDocId;
+};
+
 const buildResultsFromBatchResponse = (
   batchResponse: any,
   keyToFile: Map<string, File>,
@@ -947,6 +978,7 @@ const buildResultsFromCaseJob = (
     ? finalVerdict.per_doc_verdicts
     : [];
   const prompt1IdentityByDocId = buildPrompt1IdentityMap(jobResult);
+  const documentIdentityByDocId = buildJobDocumentIdentityMap(jobResult);
   const overallVerdict = String(finalVerdict?.verdict || resultSummary?.verdict || "");
   const overallRisk = String(finalVerdict?.risk || resultSummary?.risk || "");
   const fallbackRiskScore = verdictToRiskScore(overallVerdict, overallRisk);
@@ -954,7 +986,9 @@ const buildResultsFromCaseJob = (
 
   return uploads.map((upload, index) => {
     const docVerdict = perDocVerdicts[index] || {};
-    const prompt1Identity = prompt1IdentityByDocId.get(caseDocIdForIndex(index));
+    const docId = caseDocIdForIndex(index);
+    const prompt1Identity = prompt1IdentityByDocId.get(docId);
+    const documentIdentity = documentIdentityByDocId.get(docId);
     const docRiskScore = docVerdict?.verdict
       ? verdictToRiskScore(String(docVerdict.verdict), overallRisk)
       : fallbackRiskScore;
@@ -982,11 +1016,22 @@ const buildResultsFromCaseJob = (
       previewUrl: URL.createObjectURL(upload.file),
       previewUrls: null,
       identity:
-        finalVerdict?.candidate || prompt1Identity
+        finalVerdict?.candidate || documentIdentity || prompt1Identity
           ? {
-              name: finalVerdict?.candidate?.name || prompt1Identity?.name || undefined,
-              dob: finalVerdict?.candidate?.dob || prompt1Identity?.dob || undefined,
-              address: prompt1Identity?.address || undefined,
+              name:
+                finalVerdict?.candidate?.name ||
+                documentIdentity?.name ||
+                prompt1Identity?.name ||
+                undefined,
+              dob:
+                finalVerdict?.candidate?.dob ||
+                documentIdentity?.dob ||
+                prompt1Identity?.dob ||
+                undefined,
+              address:
+                documentIdentity?.address ||
+                prompt1Identity?.address ||
+                undefined,
               confidence:
                 typeof finalVerdict.confidence === "number"
                   ? finalVerdict.confidence / 100

@@ -1391,7 +1391,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
     typeof batchMeta?.identitySimilarity === 'number'
       ? `${Math.round(batchMeta.identitySimilarity)}%`
       : hasPrompt2
-        ? 'Prompt 2'
+        ? 'N/A'
         : 'N/A';
   const correlationSummary =
     finalVerdict?.summary?.trim() ||
@@ -1420,7 +1420,7 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
 
   const identitySummary =
     hasPrompt2 && (canonicalName || canonicalDob)
-      ? `Prompt 2 resolved candidate${canonicalName ? ` as ${canonicalName}` : ''}${canonicalDob ? `, DOB ${canonicalDob}` : ''}.`
+      ? [canonicalName, canonicalDob ? `DOB ${canonicalDob}` : ''].filter(Boolean).join(', ')
       : canonicalName || canonicalDob || canonicalAddress
       ? `Primary identity anchors detected across ${files.length} document${files.length === 1 ? '' : 's'}.`
       : 'Identity fields were limited in the returned analysis payload.';
@@ -1511,13 +1511,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
           )
           .join('')
       : 'No material issue flagged.';
-
-  const finalSummaryBullets = [
-    `Primary subject details used for review: ${canonicalName || 'name unavailable'}, ${canonicalDob || 'DOB unavailable'}, ${canonicalAddress || 'address unavailable'}.`,
-    `KYC outcome for this batch: ${caseVerdict || verdictText(run.overallDecision)}.`,
-    `Highest-risk note: ${exceptionSummary}`,
-    `Recommended next step: ${executiveSummary}`,
-  ];
 
   const promptDocFor = (index: number) => perDocVerdicts[index] || null;
   const academicFor = (index: number) => academicTimeline[index] || null;
@@ -1732,7 +1725,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
               <div class="summary-card">
                 <div class="summary-title">Document Count</div>
                 <div class="summary-value">${files.length}</div>
-                <div class="summary-note">Up to 10 documents are shown in the verification matrix.</div>
               </div>
             </section>
 
@@ -1785,7 +1777,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                 <div class="matrix-summary-card compact">
                   <div class="matrix-summary-label">Date Summary</div>
                   <div class="matrix-summary-value">${escapeHtml(canonicalDob || 'Insufficient date data')}</div>
-                  <div class="matrix-summary-note">DOB shown only when OCR identity data is available.</div>
                 </div>
               </div>
 
@@ -1834,14 +1825,6 @@ const buildReportHtml = (run: ReportRun, batchMeta?: BatchMeta) => {
                 <h3>Analyst / Model Notes</h3>
                 <p>${escapeHtml(analystNotes || 'No additional model narrative was returned for this batch.')}</p>
                 <p style="margin-top: 10px;"><strong>Recommendation:</strong> ${escapeHtml(executiveSummary)}</p>
-              </div>
-            </section>
-
-            <section class="closing-summary">
-              <h2 class="section-heading">Summary</h2>
-              <div class="closing-panel" style="max-width:100%;">
-                <p style="margin:0;font-size:13px;color:#374151;line-height:1.6;">${escapeHtml(analystNotes || correlationSummary || 'Cross-document review completed.')}</p>
-                <p style="margin:6px 0 0;font-size:13px;color:#374151;line-height:1.6;"><strong>Recommendation:</strong> ${escapeHtml(executiveSummary)}</p>
               </div>
             </section>
 

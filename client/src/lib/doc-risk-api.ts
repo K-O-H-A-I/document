@@ -49,6 +49,15 @@ type BatchJobStatusResponse = {
   case_id?: string;
   status: string;
   error?: string;
+  documents?: Array<{
+    doc_id?: string;
+    filename?: string;
+    identity?: {
+      name?: string;
+      dob?: string;
+      address?: string;
+    };
+  }>;
   prompt1_outputs?: Array<{
     name?: string;
     dob?: string;
